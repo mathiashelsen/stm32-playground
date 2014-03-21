@@ -3,121 +3,108 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdint.h>
+#include <math.h>
+
+#define BUFFER_SIZE 64
+
+volatile uint16_t	DMA_BUFFER[BUFFER_SIZE];
+
+// These should be called in the following order:
+void init_DMA(void);
+void init_DAC(void);
+void init_TIM2(void);
 
 int main(void)
 {
     NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 ); 
-    initADC();
-    initTimer();
-    initLED();
-    int index = 0;
-    uint16_t ADCBuffer[16];
-    memset(ADCBuffer, 0, sizeof(uint16_t));
-    volatile uint16_t avgReading = 0;
 
-    while(1)
+    for(uint16_t i = 0; i < BUFFER_SIZE; i++)
     {
-	while(  ADC_GetFlagStatus( ADC1, ADC_FLAG_EOC) == RESET );
-	ADC_ClearFlag(ADC1, ADC_FLAG_EOC);
-	ADCBuffer[index] = ADC_GetConversionValue(ADC1);
-	index++;
-	if(index == 16)
-	{
-	    index = 0;
-
-	    avgReading = 0;
-	    for(int i = 0; i < 16; i++ )
-	    {
-		avgReading += ADCBuffer[i];
-	    }
-	    if( avgReading > 300 )
-	    {
-		GPIO_SetBits(GPIOD, GPIO_Pin_14);
-	    }
-	    else
-	    {
-		GPIO_ResetBits(GPIOD, GPIO_Pin_14);
-	    }
-	}
+	DMA_BUFFER[i] = (i << 5);
     }
 
-    return 0;
-}
+    init_TIM2();
+    init_DAC();
+    init_DMA();
 
-void initADC(void)
-{
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
-
-    GPIO_InitTypeDef GPIOInit;
-    GPIOInit.GPIO_Pin = GPIO_Pin_3;
-    GPIOInit.GPIO_Mode = GPIO_Mode_AN;
-    GPIOInit.GPIO_PuPd = GPIO_PuPd_NOPULL;
-    GPIO_Init(GPIOC, &GPIOInit);
-
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
-
-    ADC_InitTypeDef ADCInit;
-    ADC_StructInit( &ADCInit );
-    ADCInit.ADC_Resolution = ADC_Resolution_12b;
-    ADCInit.ADC_ScanConvMode = DISABLE;
-    ADCInit.ADC_ContinuousConvMode = ENABLE;
-    ADCInit.ADC_ExternalTrigConv = ADC_ExternalTrigConvEdge_None;
-    ADCInit.ADC_DataAlign = ADC_DataAlign_Right;
-    ADCInit.ADC_NbrOfConversion = 1;
-
-    ADC_CommonInitTypeDef ADCCommonInit;
-    ADC_CommonStructInit( &ADCCommonInit );
-    ADCCommonInit.ADC_Mode = ADC_Mode_Independent;
-    ADCCommonInit.ADC_Prescaler = ADC_Prescaler_Div8;
-
-    ADC_Init(ADC1, &ADCInit);
-    ADC_CommonInit( &ADCCommonInit );
-    ADC_RegularChannelConfig(ADC1, ADC_Channel_13, 1, ADC_SampleTime_480Cycles);
-    ADC_Cmd(ADC1, ENABLE);
-    ADC_SoftwareStartConv(ADC1);
-
-}
-
-void initLED(void)
-{
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
-
-    GPIO_InitTypeDef GPIOInit;
-    GPIOInit.GPIO_Pin = GPIO_Pin_14;
-    GPIOInit.GPIO_Mode = GPIO_Mode_OUT;
-    GPIOInit.GPIO_PuPd = GPIO_PuPd_NOPULL;
-    GPIO_Init(GPIOD, &GPIOInit);
-}
-
-void initTimer(void)
-{
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
-
-    GPIO_InitTypeDef GPIOInit;
-    GPIOInit.GPIO_Pin = GPIO_Pin_10;
-    GPIOInit.GPIO_Mode = GPIO_Mode_AF;
-    GPIOInit.GPIO_PuPd = GPIO_PuPd_NOPULL;
-    GPIO_Init(GPIOB, &GPIOInit);
-
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
-
-    TIM_TimeBaseInitTypeDef timerInitStructure;
-    timerInitStructure.TIM_Prescaler = 5;
-    timerInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
-    timerInitStructure.TIM_Period = 10;
-    timerInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
-    timerInitStructure.TIM_RepetitionCounter = 0;
-    TIM_TimeBaseInit(TIM2, &timerInitStructure);
     TIM_Cmd(TIM2, ENABLE);
+    DAC_Cmd( DAC_Channel_1, ENABLE );
+    DAC_DMACmd( DAC_Channel_1, ENABLE ); 
+    DMA_Cmd( DMA1_Stream5, ENABLE );
+    while(1)
+    {
+	
+    }
 
-   TIM_OCInitTypeDef outputChannelInit = {0,};
-    outputChannelInit.TIM_OCMode = TIM_OCMode_PWM1;
-    outputChannelInit.TIM_Pulse = 5;
-    outputChannelInit.TIM_OutputState = TIM_OutputState_Enable;
-    outputChannelInit.TIM_OCPolarity = TIM_OCPolarity_High;
+}
 
-    TIM_OC3Init(TIM2, &outputChannelInit);
-    TIM_OC3PreloadConfig(TIM2, TIM_OCPreload_Enable);
+void init_DMA(void)
+{
+    // Enable the clock to the DMA
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA1, ENABLE);
 
-    GPIO_PinAFConfig(GPIOB, GPIO_PinSource10, GPIO_AF_TIM2);
+    // Configure the DMA stream for memory -> DAC
+    DMA_InitTypeDef DMAInit = {0, };
+    DMAInit.DMA_Channel	    = DMA_Channel_7; // DMA channel 7 stream 5 is mapped to DAC1
+    DMAInit.DMA_PeripheralBaseAddr  = (uint32_t) 0x40007408; // Magic!
+    DMAInit.DMA_Memory0BaseAddr	    = (uint32_t) DMA_BUFFER; // Copy data from the buffer
+    DMAInit.DMA_DIR	    = DMA_DIR_MemoryToPeripheral;
+    DMAInit.DMA_BufferSize  = BUFFER_SIZE;
+    DMAInit.DMA_PeripheralInc	    = DMA_PeripheralInc_Disable; // Do not increase the periph pointer
+    DMAInit.DMA_MemoryInc   = DMA_MemoryInc_Enable; // But do increase the memory pointer
+    DMAInit.DMA_PeripheralDataSize  = DMA_PeripheralDataSize_HalfWord; //16 bits only please
+    DMAInit.DMA_MemoryDataSize	    = DMA_MemoryDataSize_HalfWord;
+    DMAInit.DMA_Mode	    = DMA_Mode_Circular; // Wrap around and keep playing a shanty tune
+    DMAInit.DMA_Priority    = DMA_Priority_VeryHigh;
+    DMAInit.DMA_FIFOMode    = DMA_FIFOMode_Disable; // No FIFO, direct write will be sufficiently fast
+    DMAInit.DMA_MemoryBurst = DMA_MemoryBurst_Single;
+    DMAInit.DMA_PeripheralBurst	    = DMA_PeripheralBurst_Single;
+    
+    // Initialize the DMA
+    DMA_Init( DMA1_Stream5, &DMAInit );
+}
+
+void init_DAC(void)
+{
+    // Now to output to some pin ofcourse, PA4 for example (routed to audio PA)
+    //  Enable clock to GPIOA
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
+
+    // Init the pins
+    GPIO_InitTypeDef GPIOInit = {0, };
+    GPIOInit.GPIO_Pin	= GPIO_Pin_4; // PA4
+    GPIOInit.GPIO_Mode	= GPIO_Mode_AN; // Analog function
+    
+    GPIO_Init(GPIOA, &GPIOInit);
+
+    // Enable the clock to the DAC
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_DAC, ENABLE);
+    
+    // Configure the DAC with DMA and Timer trigger
+    DAC_InitTypeDef DACInit = {0, };
+    DACInit.DAC_Trigger	    = DAC_Trigger_T2_TRGO; // Trigger of timer 2
+    DACInit.DAC_WaveGeneration	= DAC_WaveGeneration_None; // No noise or triangle
+    DACInit.DAC_OutputBuffer	= DAC_OutputBuffer_Enable; // Buffer the output 
+
+    // Init DAC1
+    DAC_Init( DAC_Channel_1, &DACInit );
+}
+
+void init_TIM2(void)
+{
+    // Enable the clock to the timer 
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE); // APB1 clock: 168MHz/4 = 42 MHz
+
+    TIM_TimeBaseInitTypeDef TIMInit = {0, }; 
+    TIMInit.TIM_Prescaler   = 1;
+    TIMInit.TIM_CounterMode = TIM_CounterMode_Up;
+    TIMInit.TIM_Period	    = 420; //Timer overflows at 1MHz rate
+    TIMInit.TIM_ClockDivision	= TIM_CKD_DIV1;
+
+    // Init but DON'T enable
+    TIM_TimeBaseInit(TIM2, &TIMInit );
+   
+    // Generate a trigger signal on update 
+    TIM_SelectOutputTrigger(TIM2, TIM_TRGOSource_Update);
 }
