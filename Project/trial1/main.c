@@ -99,7 +99,7 @@ void init_TIM2(void)
     TIM_TimeBaseInitTypeDef TIMInit = {0, }; 
     TIMInit.TIM_Prescaler   = 1;
     TIMInit.TIM_CounterMode = TIM_CounterMode_Up;
-    TIMInit.TIM_Period	    = 420; //Timer overflows at 1MHz rate
+    TIMInit.TIM_Period	    = 42; //Timer overflows at 1MHz rate
     TIMInit.TIM_ClockDivision	= TIM_CKD_DIV1;
 
     // Init but DON'T enable
