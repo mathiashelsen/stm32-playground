@@ -30,7 +30,6 @@ int main(void)
     init_TIM2();
     init_TIM3();
     
-    // Configure TIM3 OC1 on an output pin
     //  Enable clock to GPIOA
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
 
