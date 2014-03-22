@@ -15,6 +15,8 @@
  * to generate any phase shift you would like.
  * In comparison to multiple OC's on a single timer this has the advantage it can be used 
  * to trigger multiple internal periphs.
+ * Both TIM2 and TIM3 generate the same number of impulses, and TIM2 is the first
+ * to generate and UEV. 
  */
 
 #define TIM_PERIOD 100
@@ -43,7 +45,7 @@ int main(void)
     GPIO_Init(GPIOC, &GPIOInit);
 
     TIM_Cmd(TIM2, ENABLE);
-    TIM_Cmd(TIM3, ENABLE);
+    //TIM_Cmd(TIM3, ENABLE);
     while(1)
     {
 	
@@ -81,6 +83,7 @@ void init_TIM2(void)
     TIMInit.TIM_CounterMode = TIM_CounterMode_Up;
     TIMInit.TIM_Period	    = TIM_PERIOD; // running at 1 MHz
     TIMInit.TIM_ClockDivision	= TIM_CKD_DIV1;
+    //TIM_SelectOnePulseMode(TIM2, TIM_OPMode_Single);	// Only one pulse, for debugging purposes
 
     // Init but DON'T enable
     TIM_TimeBaseInit(TIM2, &TIMInit );
