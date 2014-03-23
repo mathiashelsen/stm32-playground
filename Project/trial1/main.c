@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <math.h>
 
-#define BUFFER_SIZE 64
+#define BUFFER_SIZE 128
 
 volatile uint16_t	DMA_BUFFER[BUFFER_SIZE];
 
@@ -21,7 +21,7 @@ int main(void)
 
     for(uint16_t i = 0; i < BUFFER_SIZE; i++)
     {
-	DMA_BUFFER[i] = (i << 5);
+	DMA_BUFFER[i] = (i << 2);
     }
 
     init_TIM2();
@@ -85,7 +85,7 @@ void init_DAC(void)
     DAC_InitTypeDef DACInit = {0, };
     DACInit.DAC_Trigger	    = DAC_Trigger_T2_TRGO; // Trigger of timer 2
     DACInit.DAC_WaveGeneration	= DAC_WaveGeneration_None; // No noise or triangle
-    DACInit.DAC_OutputBuffer	= DAC_OutputBuffer_Enable; // Buffer the output 
+    DACInit.DAC_OutputBuffer	= DAC_OutputBuffer_Disable;
 
     // Init DAC1
     DAC_Init( DAC_Channel_1, &DACInit );
@@ -99,7 +99,7 @@ void init_TIM2(void)
     TIM_TimeBaseInitTypeDef TIMInit = {0, }; 
     TIMInit.TIM_Prescaler   = 1;
     TIMInit.TIM_CounterMode = TIM_CounterMode_Up;
-    TIMInit.TIM_Period	    = 42; //Timer overflows at 1MHz rate
+    TIMInit.TIM_Period	    = 420; //Timer overflows at 1MHz rate
     TIMInit.TIM_ClockDivision	= TIM_CKD_DIV1;
 
     // Init but DON'T enable
