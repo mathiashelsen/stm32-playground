@@ -1,3 +1,5 @@
+/* Copyright 2014 Mathias Helsen */
+
 #include "stm32f4xx.h"
 #include "misc.h"
 #include <stdio.h>
