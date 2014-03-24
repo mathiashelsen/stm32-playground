@@ -93,6 +93,8 @@ int openTTY(char* file, int baud) {
 		TTYErr = strerror(errno);
 		return -1;
 	}
+	
+	return fd;
 }
 
 int readTTY(int fd, void *buf, int N) {

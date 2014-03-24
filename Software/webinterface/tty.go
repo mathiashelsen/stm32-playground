@@ -2,8 +2,10 @@ package main
 
 import (
 	"errors"
+	"log"
 )
 
+////cgo CFLAGS: -Wall -Werror
 //#include "tty.h"
 import "C"
 import "unsafe"
@@ -25,5 +27,17 @@ func (t tty) Read(p []byte) (n int, err error) {
 	} else {
 		return n, nil
 	}
+}
 
+
+func (t tty) ReadFull(p []byte)  {
+	N, err := t.Read(p)
+	for N < len(p){
+		if err != nil{
+			log.Fatal(err)
+		}
+		var n int
+		n, err = t.Read(p[N:])
+		N += n
+	}
 }
