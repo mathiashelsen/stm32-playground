@@ -5,12 +5,16 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"sync"
 )
 
 const BUFSIZE = 512
 
-var( serial tty
- buf = make([]byte, BUFSIZE)
+var (
+	serial tty
+	data   = make([]byte, BUFSIZE)
+	buffer = make([]byte, BUFSIZE)
+	dataLock sync.Mutex
 )
 
 func main() {
@@ -23,10 +27,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	go func(){
-		for{
-			//log.Println("waiting for frame")
-			serial.ReadFull(buf)
+	go func() {
+		for {
+			serial.ReadFull(buffer)
+			dataLock.Lock()
+			buffer, data = data, buffer
+			dataLock.Unlock()
 		}
 	}()
 
@@ -35,5 +41,3 @@ func main() {
 
 	http.ListenAndServe(":4000", nil)
 }
-
-

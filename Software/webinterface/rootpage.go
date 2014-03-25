@@ -2,12 +2,12 @@ package main
 
 // Serves the scope's main page.
 
-import(
+import (
 	"fmt"
 	"net/http"
 )
 
-func rootHandler(w http.ResponseWriter, r*http.Request){
+func rootHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, page)
 }
 
@@ -16,7 +16,7 @@ const page = `
 <html>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-	<title> Scope </title>
+	<title>SoftScope</title>
 	<style media="all" type="text/css">
 
 		body  { margin-left: 5%; margin-right:5%; font-family: sans-serif; }
@@ -60,7 +60,7 @@ setInterval(refresh, 200);
 
 <body>
 	
-	<h1>Poor man's scope</h1>
+	<h1><i>Soft</i>Scope</h1>
 
 	<img id="screen" src="/screen.svg" />
 
