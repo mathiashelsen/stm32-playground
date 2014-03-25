@@ -5,41 +5,46 @@ import (
 	"log"
 	"net/http"
 	"github.com/ajstarks/svgo"
+	"strconv"
+	"fmt"
 )
 
-var serial tty
+const BUFSIZE = 512
+
+var( serial tty
+ buf = make([]byte, BUFSIZE)
+)
 
 func main() {
 	flag.Parse()
 
 	var err error
-	serial, err = OpenTTY(flag.Arg(0), 9600)
+	baud, _ := strconv.Atoi(flag.Arg(1))
+	serial, err = OpenTTY(flag.Arg(0), baud)
 	if err != nil {
 		log.Fatal(err)
-	}
-	//serial.ReadFull(buf)
-	for i:=range buf{
-		buf[i] = byte(i)
 	}
 
 	go func(){
 		for{
+			//log.Println("waiting for frame")
 			serial.ReadFull(buf)
-			log.Println("read frame")
 		}
 	}()
 
-	http.HandleFunc("/", imgHandler)
+	http.HandleFunc("/", rootHandler)
+	http.HandleFunc("/screen.svg", screenHandler)
 
 	http.ListenAndServe(":4000", nil)
 }
 
-var	buf = make([]byte, 1024*2)
 
-func imgHandler(w http.ResponseWriter, r*http.Request){
+
+
+func screenHandler(w http.ResponseWriter, r*http.Request){
 
 	const S = 1
-	W,H := 800, 600
+	W,H := 512, 512
 	canvas := svg.New(w)
 
 	w.Header().Set("Content-Type", "image/svg+xml")
@@ -54,3 +59,35 @@ func imgHandler(w http.ResponseWriter, r*http.Request){
 
 	canvas.End()
 }
+
+
+
+func rootHandler(w http.ResponseWriter, r*http.Request){
+	fmt.Fprintln(w, page)
+}
+
+const page = `
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title> Scope </title>
+	<style media="all" type="text/css">
+
+		body  { margin-left: 5%; margin-right:5%; font-family: sans-serif; }
+		table { border-collapse: collapse; }
+		hr    { border-style: none; border-top: 1px solid #CCCCCC; }
+		a     { color: #375EAB; text-decoration: none; }
+	</style>
+
+</head>
+
+<body>
+	
+	<h1>Poor man's scope</h1>
+
+	<img src="/screen.svg" />
+
+</body>
+</html>
+`

@@ -29,11 +29,10 @@ func (t tty) Read(p []byte) (n int, err error) {
 	}
 }
 
-
-func (t tty) ReadFull(p []byte)  {
+func (t tty) ReadFull(p []byte) {
 	N, err := t.Read(p)
-	for N < len(p){
-		if err != nil{
+	for N < len(p) {
+		if err != nil {
 			log.Fatal(err)
 		}
 		var n int
