@@ -29,6 +29,15 @@ func (t tty) Read(p []byte) (n int, err error) {
 	}
 }
 
+func (t tty) Write(p []byte) (n int, err error) {
+	n = int(C.writeTTY(C.int(t), unsafe.Pointer(&p[0]), C.int(len(p))))
+	if n != len(p) {
+		return n, errors.New("tty write error")
+	} else {
+		return n, nil
+	}
+}
+
 func (t tty) ReadFull(p []byte) {
 	N, err := t.Read(p)
 	for N < len(p) {

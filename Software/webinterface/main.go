@@ -39,5 +39,8 @@ func main() {
 	http.HandleFunc("/", rootHandler)
 	http.HandleFunc("/screen.svg", screenHandler)
 
-	http.ListenAndServe(":4000", nil)
+	err = http.ListenAndServe(":4000", nil)
+	if err != nil{
+		log.Fatal(err)
+	}
 }

@@ -5,10 +5,26 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"log"
+	"encoding/json"
 )
 
+
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, page)
+	switch r.Method{
+		case "GET":
+			fmt.Fprintln(w, page)
+		case "PUT":
+			state:= make(map[string]interface{})
+			check(json.NewDecoder(r.Body).Decode(&state))
+			fmt.Println("POST:", state)
+			s := NewState(state)
+			s.WriteTo(serial)
+	}
+}
+
+func check(err error){
+	if err != nil{log.Fatal(err)}
 }
 
 const page = `
@@ -17,6 +33,8 @@ const page = `
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<title>SoftScope</title>
+
+	<link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.4.2/pure-min.css">
 	<style media="all" type="text/css">
 
 		body  { margin-left: 5%; margin-right:5%; font-family: sans-serif; }
@@ -46,13 +64,25 @@ function setAttr(id, attr, value){
 	elem[attr] = value;
 }
 
-
-
 function refresh(){
 	setAttr("screen", "src", "/screen.svg?" + Math.random()) // refresh screen.svg, random cachebreaker
 }
 
 setInterval(refresh, 200);
+
+function val(id){
+	return elementById(id).value
+}
+
+function upload(){
+	var req = new XMLHttpRequest();
+	req.open("PUT", document.URL, false);
+	var map = {
+		"Samples": val("Samples"),
+		"TrigLev": val("TrigLev"),
+		"TimeBase": val("TimeBase")};
+	req.send(JSON.stringify(map));
+}
 
 	</script>
 
@@ -62,7 +92,17 @@ setInterval(refresh, 200);
 	
 	<h1><i>Soft</i>Scope</h1>
 
+<div>
 	<img id="screen" src="/screen.svg" />
+</div>
+
+<div style="padding-top:2em;">
+	<table>
+		<tr> <td><b> Samples  </b></td> <td><input id=Samples  type=number min=1 value=512          onchange="upload();"></td></tr>
+		<tr> <td><b> TrigLev  </b></td> <td><input id=TrigLev  type=number min=1 value=511 max=1023 onchange="upload();"></td></tr>
+		<tr> <td><b> TimeBase </b></td> <td><input id=TimeBase type=number min=1 value=100          onchange="upload();"></td></tr>
+	</table>
+</div>
 
 </body>
 </html>

@@ -7,6 +7,8 @@ int openTTY(char* file, int baud);
 
 int readTTY(int fd, void *buf, int N);
 
+int writeTTY(int fd, void *buf, int N);
+
 void closeTTY(int fd);
 
 #endif

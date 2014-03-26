@@ -3,11 +3,8 @@
  */
 #include <errno.h>
 #include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <termios.h>
-#include <unistd.h>
 
 // pair of baudrate + speed code
 typedef struct {
@@ -100,6 +97,10 @@ int openTTY(char* file, int baud) {
 int readTTY(int fd, void *buf, int N) {
 	int n = read(fd, buf, N);
 	return n;
+}
+
+int writeTTY(int fd, void *buf, int N) {
+	return write(fd, buf, N);
 }
 
 void closeTTY(int fd) {
