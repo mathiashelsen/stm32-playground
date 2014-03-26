@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"fmt"
 	"net/http"
 	"strconv"
 	"sync"
@@ -35,6 +36,7 @@ func main() {
 	go StreamInput()
 
 	http.HandleFunc("/", rootHandler)
+	http.HandleFunc("/event", eventHandler)
 	http.HandleFunc("/screen.svg", screenHandler)
 
 	err = http.ListenAndServe(":4000", nil)
@@ -59,12 +61,17 @@ func StreamInput() {
 			//skip
 		}
 
+		dataLock.Lock()
+
 		stateBuf.Samples = serial.readInt()
 		stateBuf.TimeBase = serial.readInt()
 		stateBuf.TrigLev = serial.readInt()
 		serial.ReadFull(buffer)
-		dataLock.Lock()
+
 		buffer, data = data, buffer
+		stateBuf, state = state, stateBuf
+		fmt.Println(state)
+
 		dataLock.Unlock()
 	}
 }

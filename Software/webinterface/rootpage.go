@@ -10,9 +10,16 @@ import (
 )
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, page)
+}
+
+
+func eventHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		fmt.Fprintln(w, page)
+		dataLock.Lock()
+		defer dataLock.Unlock()
+		json.NewEncoder(w).Encode(&state)
 	case "PUT":
 		state := make(map[string]interface{})
 		check(json.NewDecoder(r.Body).Decode(&state))
@@ -77,7 +84,7 @@ function val(id){
 
 function upload(){
 	var req = new XMLHttpRequest();
-	req.open("PUT", document.URL, false);
+	req.open("PUT", document.URL + "/event", false);
 	var map = {
 		"Samples": val("Samples"),
 		"TrigLev": val("TrigLev"),

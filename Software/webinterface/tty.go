@@ -51,6 +51,7 @@ func (t tty) ReadFull(p []byte) {
 	}
 }
 
+// little endian
 func (t tty) writeInt(I int) {
 	i := uint32(I)
 	bytes := []byte{
