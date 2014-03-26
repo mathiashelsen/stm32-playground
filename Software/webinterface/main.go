@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"log"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"sync"
@@ -48,6 +48,8 @@ func main() {
 func StreamInput() {
 	for {
 
+		// TODO (proto): not correct: should scan bytes, not int
+		//
 		// Skip to the beginning of what is presumably a new frame.
 		// Once we are in sync we should not have to skip anymore,
 		// but in the rare case a bit should fall over, we will re-sync quickly.

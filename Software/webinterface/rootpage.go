@@ -10,15 +10,15 @@ import (
 )
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, page)
+	fmt.Fprintln(w, page)
 }
-
 
 func eventHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		dataLock.Lock()
 		defer dataLock.Unlock()
+		fmt.Println("GET:", state)
 		json.NewEncoder(w).Encode(&state)
 	case "PUT":
 		state := make(map[string]interface{})
@@ -53,6 +53,8 @@ const page = `
 
 	<script>
 
+var tick = 200;
+
 // wraps document.getElementById, shows error if not found
 function elementById(id){
 	var elem = document.getElementById(id);
@@ -72,11 +74,32 @@ function setAttr(id, attr, value){
 	elem[attr] = value;
 }
 
-function refresh(){
-	setAttr("screen", "src", "/screen.svg?" + Math.random()) // refresh screen.svg, random cachebreaker
+
+// onreadystatechange function for update http request.
+// updates the DOM with new values received from server.
+function updateDOM(req){
+	if (req.readyState == 4) { // DONE
+		if (req.status == 200) {	
+			var resp = JSON.parse(req.responseText);	
+			setAttr("Samples", "value", resp["Samples"]);
+			setAttr("TimeBase", "value", resp["TimeBase"]);
+			setAttr("TrigLev", "value", resp["TrigLev"]);
+		} 
+	}
 }
 
-setInterval(refresh, 200);
+function refresh(){
+	setAttr("screen", "src", "/screen.svg?" + Math.random()) // refresh screen.svg, random cachebreaker
+
+	var req = new XMLHttpRequest();
+	req.open("GET", document.URL + "/event", true); 
+	req.timeout = 2*tick;
+	req.onreadystatechange = function(){ updateDOM(req) };
+	req.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+	req.send("");
+}
+
+setInterval(refresh, tick);
 
 function val(id){
 	return elementById(id).value
@@ -106,9 +129,9 @@ function upload(){
 
 <div style="padding-top:2em;">
 	<table>
-		<tr> <td><b> Samples  </b></td> <td><input id=Samples  type=number min=1 value=512          onchange="upload();"></td></tr>
-		<tr> <td><b> TrigLev  </b></td> <td><input id=TrigLev  type=number min=1 value=511 max=1023 onchange="upload();"></td></tr>
-		<tr> <td><b> TimeBase </b></td> <td><input id=TimeBase type=number min=1 value=100          onchange="upload();"></td></tr>
+		<tr> <td><b> Samples  </b></td> <td><input id=Samples  type=number min=1 value=256          onchange="upload();"></td></tr>
+		<tr> <td><b> TrigLev  </b></td> <td><input id=TrigLev  type=number min=1 value=510 max=1023 onchange="upload();"></td></tr>
+		<tr> <td><b> TimeBase </b></td> <td><input id=TimeBase type=number min=1 value=200          onchange="upload();"></td></tr>
 	</table>
 </div>
 
