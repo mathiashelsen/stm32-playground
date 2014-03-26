@@ -37,6 +37,9 @@ void init_DMA2(void); //DMA2 will be emptying ADC1 and ADC2
 void init_ADC_VC(void); // Init the ADC that samples the collector-emitter voltage
 void init_ADC_IE(void); // Init the ADC that samples the emitter current
 
+void init_DAC_VC(void);
+void init_DAC_VB(void);
+
 void init_USART(void); // Unimplemented
 
 int main(void)
