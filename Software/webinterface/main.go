@@ -65,14 +65,16 @@ func StreamInput() {
 
 		dataLock.Lock()
 
+		// TODO (proto) move into state.Read
 		stateBuf.Samples = serial.readInt()
 		stateBuf.TimeBase = serial.readInt()
 		stateBuf.TrigLev = serial.readInt()
+		stateBuf.SoftGain = serial.readInt()
 		serial.ReadFull(buffer)
 
 		buffer, data = data, buffer
 		stateBuf, state = state, stateBuf
-		fmt.Println(state)
+		fmt.Println("Frame recv:", state)
 
 		dataLock.Unlock()
 	}

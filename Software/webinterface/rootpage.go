@@ -14,18 +14,19 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func eventHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "GET":
 		dataLock.Lock()
 		defer dataLock.Unlock()
-		fmt.Println("GET:", state)
+
+	switch r.Method {
+	case "GET":
 		json.NewEncoder(w).Encode(&state)
+
 	case "PUT":
-		state := make(map[string]interface{})
-		check(json.NewDecoder(r.Body).Decode(&state))
-		fmt.Println("POST:", state)
-		s := NewState(state)
-		s.WriteTo(serial)
+
+		m := make(map[string]interface{})
+		check(json.NewDecoder(r.Body).Decode(&m))
+		state = NewState(m)
+		state.WriteTo(serial)
 	}
 }
 
@@ -53,7 +54,7 @@ const page = `
 
 	<script>
 
-var tick = 1000;
+var tick = 200;
 
 // wraps document.getElementById, shows error if not found
 function elementById(id){
@@ -84,6 +85,7 @@ function updateDOM(req){
 			setAttr("Samples", "value", resp["Samples"]);
 			setAttr("TimeBase", "value", resp["TimeBase"]);
 			setAttr("TrigLev", "value", resp["TrigLev"]);
+			setAttr("SoftGain", "value", resp["SoftGain"]);
 		} 
 	}
 }
@@ -91,12 +93,12 @@ function updateDOM(req){
 function refresh(){
 	setAttr("screen", "src", "/screen.svg?" + Math.random()) // refresh screen.svg, random cachebreaker
 
-	var req = new XMLHttpRequest();
-	req.open("GET", document.URL + "/event", true); 
-	req.timeout = 2*tick;
-	req.onreadystatechange = function(){ updateDOM(req) };
-	req.setRequestHeader("Content-type","application/x-www-form-urlencoded");
-	req.send("");
+	//var req = new XMLHttpRequest();
+	//req.open("GET", document.URL + "/event", true); 
+	//req.timeout = 2*tick;
+	//req.onreadystatechange = function(){ updateDOM(req) };
+	//req.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+	//req.send("");
 }
 
 setInterval(refresh, tick);
@@ -111,7 +113,8 @@ function upload(){
 	var map = {
 		"Samples": val("Samples"),
 		"TrigLev": val("TrigLev"),
-		"TimeBase": val("TimeBase")};
+		"TimeBase": val("TimeBase"),
+		"SoftGain": val("SoftGain")};
 	req.send(JSON.stringify(map));
 }
 
@@ -129,9 +132,10 @@ function upload(){
 
 <div style="padding-top:2em;">
 	<table>
-		<tr> <td><b> Samples  </b></td> <td><input id=Samples  type=number min=1 value=256          onchange="upload();"></td></tr>
-		<tr> <td><b> TrigLev  </b></td> <td><input id=TrigLev  type=number min=1 value=510 max=1023 onchange="upload();"></td></tr>
-		<tr> <td><b> TimeBase </b></td> <td><input id=TimeBase type=number min=1 value=200          onchange="upload();"></td></tr>
+		<tr> <td><b> Samples  </b></td> <td> <input id=Samples  type=number min=1 value=512          onchange="upload();"></td></tr>
+		<tr> <td><b> TrigLev  </b></td> <td> <input id=TrigLev  type=number min=0 value=510 max=1022 onchange="upload();"></td></tr>
+		<tr> <td><b> TimeBase </b></td> <td> <input id=TimeBase type=number min=1 value=100          onchange="upload();"></td></tr>
+		<tr> <td><b> SoftGain </b></td> <td>-<input id=SoftGain type=number min=0 value=2            onchange="upload();"></td></tr>
 	</table>
 </div>
 
