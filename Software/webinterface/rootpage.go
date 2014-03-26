@@ -3,28 +3,29 @@ package main
 // Serves the scope's main page.
 
 import (
-	"fmt"
-	"net/http"
-	"log"
 	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
 )
 
-
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method{
-		case "GET":
-			fmt.Fprintln(w, page)
-		case "PUT":
-			state:= make(map[string]interface{})
-			check(json.NewDecoder(r.Body).Decode(&state))
-			fmt.Println("POST:", state)
-			s := NewState(state)
-			s.WriteTo(serial)
+	switch r.Method {
+	case "GET":
+		fmt.Fprintln(w, page)
+	case "PUT":
+		state := make(map[string]interface{})
+		check(json.NewDecoder(r.Body).Decode(&state))
+		fmt.Println("POST:", state)
+		s := NewState(state)
+		s.WriteTo(serial)
 	}
 }
 
-func check(err error){
-	if err != nil{log.Fatal(err)}
+func check(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 const page = `
