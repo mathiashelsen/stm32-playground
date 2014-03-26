@@ -95,6 +95,7 @@ void init_ADC(void)
     
     // Initialize the DMA
     DMA_Init( DMA2_Stream0, &DMAInit );
+    DMA_Cmd( DMA2_Stream0 , ENABLE );
 
     // Now sampling from the input pin PA1
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
