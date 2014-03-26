@@ -105,8 +105,8 @@ void init_ADC(void)
 
 
     // Now configure an interrupt halfway and at the end of the transfer
-    DMA_ITConfig( DMA2_Stream0, DMA_IT_TC | DMA_IT_HT, ENABLE); // Enable the DMA to throw an iterrupt if the buffer is full
-    DMA_ClearITPendingBit(DMA2_Stream0, DMA_IT_TC | DMA_IT_HT); // Transfer Complete sets the interrupt
+    DMA_ITConfig( DMA2_Stream0, DMA_IT_TC | DMA_IT_HT, ENABLE);
+    DMA_ClearITPendingBit(DMA2_Stream0, DMA_IT_TC | DMA_IT_HT);
      
     NVIC_InitTypeDef NVICInit = {0, };
     NVICInit.NVIC_IRQChannel = DMA2_Stream0_IRQn;
@@ -118,5 +118,6 @@ void init_ADC(void)
 
 void DMA2_Stream0_IRQHandler(void)
 {
+    DMA_ClearITPendingBit(DMA2_Stream0, DMA_IT_TC | DMA_IT_HT);
     //blablabla
 }
