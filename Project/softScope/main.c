@@ -18,7 +18,7 @@ int main(void)
 {
     NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 ); 
 
-    TIM_Cmd(TIM2, ENABLE);
+    //TIM_Cmd(TIM2, ENABLE);
     while(1)
     {
 	
@@ -102,4 +102,21 @@ void init_ADC(void)
     gpio.GPIO_Pin = GPIO_Pin_1;
     gpio.GPIO_Mode = GPIO_Mode_AN;
     GPIO_Init(GPIOA, &gpio);
+
+
+    // Now configure an interrupt halfway and at the end of the transfer
+    DMA_ITConfig( DMA2_Stream0, DMA_IT_TC | DMA_IT_HT, ENABLE); // Enable the DMA to throw an iterrupt if the buffer is full
+    DMA_ClearITPendingBit(DMA2_Stream0, DMA_IT_TC | DMA_IT_HT); // Transfer Complete sets the interrupt
+     
+    NVIC_InitTypeDef NVICInit = {0, };
+    NVICInit.NVIC_IRQChannel = DMA2_Stream0_IRQn;
+    NVICInit.NVIC_IRQChannelPreemptionPriority = 0;
+    NVICInit.NVIC_IRQChannelSubPriority = 0;
+    NVICInit.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVICInit);
+}
+
+void DMA2_Stream0_IRQHandler(void)
+{
+    //blablabla
 }
