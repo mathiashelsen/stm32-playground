@@ -8,7 +8,7 @@
 
 volatile uint16_t samples[2048];
 
-#define TIM_PERIOD 42
+#define TIM_PERIOD 42000
 
 // These should be called in the following order:
 void init_clock(void); // TIM2 running at 1MHz
@@ -18,7 +18,19 @@ int main(void)
 {
     NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 ); 
 
-    //TIM_Cmd(TIM2, ENABLE);
+    init_clock(); // TIM2 running at 1MHz
+    init_ADC();
+
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
+    GPIO_InitTypeDef gpio = {0, };
+    gpio.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13;
+    gpio.GPIO_Mode = GPIO_Mode_OUT;
+    gpio.GPIO_OType = GPIO_OType_PP;
+    gpio.GPIO_Speed = GPIO_Speed_25MHz;
+    gpio.GPIO_PuPd = GPIO_PuPd_NOPULL;
+    GPIO_Init(GPIOA, &gpio);
+    
+    TIM_Cmd(TIM2, ENABLE);
     while(1)
     {
 	
@@ -119,6 +131,15 @@ void init_ADC(void)
 
 void DMA2_Stream0_IRQHandler(void)
 {
+    if( DMA_GetITStatus(DMA2_Stream0, DMA_IT_TC) != RESET)
+    {
+	GPIO_ToggleBits( GPIOD, GPIO_Pin_12);
+    }
+    else if(DMA_GetITStatus(DMA2_Stream0, DMA_IT_HT) != RESET)
+    {
+	GPIO_ToggleBits( GPIOD, GPIO_Pin_13);
+    }
+
     DMA_ClearITPendingBit(DMA2_Stream0, DMA_IT_TC | DMA_IT_HT);
     //blablabla
 }
