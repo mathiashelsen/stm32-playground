@@ -55,29 +55,15 @@ void TIM3_IRQHandler(void)
     uint16_t *triggerPoint = NULL;
     // Check if we have trigger (loop over all samples)
 
-    // Copy using DMA (Memory -> Memory)
+    // Copy from ADC buffer to USART buffer
     if(triggerPoint && !transmitting)
     {
-	// Circular DMA, memory to memory, interrupt when "complete" and set offset
+
+	// Start transmitting using DMA
 	DMA_InitTypeDef;
-void DMA_Init(DMA_Stream_TypeDef* DMAy_Streamx, DMA_InitTypeDef* DMA_InitStruct);
-void DMA_ClearFlag(DMA_Stream_TypeDef* DMAy_Streamx, uint32_t DMA_FLAG);
-void DMA_ITConfig(DMA_Stream_TypeDef* DMAy_Streamx, uint32_t DMA_IT, FunctionalState NewState);
-    NVIC_InitTypeDef NVIC_InitStructure;
-    NVIC_InitStructure.NVIC_IRQChannel = TIM3_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 3;	// Lower priority than trigger detect
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStructure);
-
-void DMA_Cmd(DMA_Stream_TypeDef* DMAy_Streamx, FunctionalState NewState);
-	// If DMA has finished, start the USART	(interrupt) using DMA
+	void DMA_Init(DMA_Stream_TypeDef* DMAy_Streamx, DMA_InitTypeDef* DMA_InitStruct);
+	void DMA_Cmd(DMA_Stream_TypeDef* DMAy_Streamx, FunctionalState NewState);
     }
-}
-
-void DMAy_Streamx_IRQHandler(void)
-{
-    // Ship data out using DMA
 }
 
 void init_clock(void)
