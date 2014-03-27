@@ -58,6 +58,7 @@ void TIM3_IRQHandler(void)
     // Copy using DMA (Memory -> Memory)
     if(triggerPoint && !transmitting)
     {
+	// Circular DMA, memory to memory, interrupt when "complete" and set offset
 	DMA_InitTypeDef;
 void DMA_Init(DMA_Stream_TypeDef* DMAy_Streamx, DMA_InitTypeDef* DMA_InitStruct);
 void DMA_ClearFlag(DMA_Stream_TypeDef* DMAy_Streamx, uint32_t DMA_FLAG);
