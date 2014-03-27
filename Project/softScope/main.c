@@ -6,21 +6,22 @@
 #include <math.h>
 #include <stdlib.h>
 
-volatile uint16_t *samples;
+volatile uint16_t *samplesBuffer;
+volatile uint16_t *usartBuffer;
 
-#define ADC_PERIOD 4200
+#define ADC_PERIOD  4200 // Divider for the ADC clock
+#define SAMPLES	    1024 // Number of samples for each acquisition
 
-// These should be called in the following order:
-void init_clock(void); // TIM2 running at 1MHz
+void init_clock(void);
 void init_ADC(void);
 
 int main(void)
 {
     NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 ); 
 
-    samples = malloc(sizeof(uint16_t)*2048);
+    samplesBuffer = malloc(sizeof(uint16_t)*SAMPLES*4);
 
-    init_clock(); // TIM2 running at 1MHz
+    init_clock();
     init_ADC();
 
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
@@ -50,6 +51,32 @@ void TIM3_IRQHandler(void)
 {
     TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
     GPIO_ToggleBits( GPIOD, GPIO_Pin_12 );
+    uint32_t triggered = 0;
+    uint16_t *triggerPoint = NULL;
+    // Check if we have trigger (loop over all samples)
+
+    // Copy using DMA (Memory -> Memory)
+    if(triggerPoint && !transmitting)
+    {
+	DMA_InitTypeDef;
+void DMA_Init(DMA_Stream_TypeDef* DMAy_Streamx, DMA_InitTypeDef* DMA_InitStruct);
+void DMA_ClearFlag(DMA_Stream_TypeDef* DMAy_Streamx, uint32_t DMA_FLAG);
+void DMA_ITConfig(DMA_Stream_TypeDef* DMAy_Streamx, uint32_t DMA_IT, FunctionalState NewState);
+    NVIC_InitTypeDef NVIC_InitStructure;
+    NVIC_InitStructure.NVIC_IRQChannel = TIM3_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 3;	// Lower priority than trigger detect
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+
+void DMA_Cmd(DMA_Stream_TypeDef* DMAy_Streamx, FunctionalState NewState);
+	// If DMA has finished, start the USART	(interrupt) using DMA
+    }
+}
+
+void DMAy_Streamx_IRQHandler(void)
+{
+    // Ship data out using DMA
 }
 
 void init_clock(void)
