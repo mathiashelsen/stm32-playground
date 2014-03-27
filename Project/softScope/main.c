@@ -8,7 +8,7 @@
 
 volatile uint16_t *samples;
 
-#define ADC_PERIOD 42000
+#define ADC_PERIOD 4200
 
 // These should be called in the following order:
 void init_clock(void); // TIM2 running at 1MHz
@@ -30,6 +30,12 @@ int main(void)
     gpio.GPIO_OType = GPIO_OType_PP;
     gpio.GPIO_Speed = GPIO_Speed_25MHz;
     gpio.GPIO_PuPd = GPIO_PuPd_NOPULL;
+    GPIO_Init(GPIOD, &gpio);
+
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
+    memset((void*) &gpio, 0, sizeof(GPIO_InitTypeDef));
+    gpio.GPIO_Pin = GPIO_Pin_1;
+    gpio.GPIO_Mode = GPIO_Mode_AN;
     GPIO_Init(GPIOA, &gpio);
     
     TIM_Cmd(TIM2, ENABLE);
@@ -40,6 +46,12 @@ int main(void)
 
 }
 
+void TIM3_IRQHandler(void)
+{
+    TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
+    GPIO_ToggleBits( GPIOD, GPIO_Pin_12 );
+}
+
 void init_clock(void)
 {
     // Enable the clock to the timer 
@@ -48,7 +60,7 @@ void init_clock(void)
     TIM_TimeBaseInitTypeDef TIMInit = {0, }; 
     TIMInit.TIM_Prescaler   = 1;
     TIMInit.TIM_CounterMode = TIM_CounterMode_Up;
-    TIMInit.TIM_Period	    = TIM_PERIOD; // running at 1 MHz
+    TIMInit.TIM_Period	    = ADC_PERIOD;
     TIMInit.TIM_ClockDivision	= TIM_CKD_DIV1;
 
     // Init but DON'T enable
@@ -56,6 +68,32 @@ void init_clock(void)
 
     // Trigger output on update
     TIM_SelectOutputTrigger(TIM2, TIM_TRGOSource_Update);
+
+
+    // Enable clock to TIM3
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
+
+    TIMInit.TIM_Period		    = 1023; // Wait for 1024 samples to be aqcuired
+
+    // Init
+    TIM_TimeBaseInit(TIM3, &TIMInit );
+    //TIM_SelectOnePulseMode(TIM3, TIM_OPMode_Single);	// Only one pulse (TRGO2 will restart the timer)
+    TIM_SelectSlaveMode(TIM3, TIM_SlaveMode_Trigger);	// TIM3 will be a slave to TIM2
+  //  TIM_SelectInputTrigger(TIM3, TIM_TS_ITR1);		// Set the input trigger to TRGO2 = ITR1 (ITR = TRGO - 1 ;-)
+    TIM_ITRxExternalClockConfig(TIM3, TIM_TS_ITR1);
+   
+    TIM_Cmd(TIM3, ENABLE);
+    // To test the config, we will be calling interrupts
+    TIM_ITConfig( TIM3, TIM_IT_Update, ENABLE);	    // Enable an interrupt for TIM3 when it Updates
+    TIM_ClearITPendingBit( TIM3, TIM_IT_Update);    // Clear the Update bit
+
+    // NVIC config
+    NVIC_InitTypeDef NVIC_InitStructure;
+    NVIC_InitStructure.NVIC_IRQChannel = TIM3_IRQn; // TIM3 is the interrupt in question
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 4;	// Lower priority than TIM2_IRQn
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
 }
 
 void init_ADC(void)
