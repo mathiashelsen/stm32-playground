@@ -8,7 +8,7 @@
 
 volatile uint16_t *samples;
 
-#define TIM_PERIOD 42000
+#define ADC_PERIOD 42000
 
 // These should be called in the following order:
 void init_clock(void); // TIM2 running at 1MHz
@@ -125,31 +125,5 @@ void init_ADC(void)
     GPIO_Init(GPIOA, &gpioInit);
     */
    
-    // Now configure an interrupt halfway and at the end of the transfer
-
-    DMA_ITConfig( DMA2_Stream0, DMA_IT_TC | DMA_IT_HT, ENABLE);
-    DMA_ClearITPendingBit(DMA2_Stream0, DMA_IT_TC | DMA_IT_HT);
-    
-    NVIC_InitTypeDef NVICInit = {0, };
-    NVICInit.NVIC_IRQChannel = DMA2_Stream0_IRQn;
-    NVICInit.NVIC_IRQChannelPreemptionPriority = 0;
-    NVICInit.NVIC_IRQChannelSubPriority = 0;
-    NVICInit.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVICInit);
-
 }
 
-void DMA2_Stream0_IRQHandler(void)
-{
-    if( DMA_GetITStatus(DMA2_Stream0, DMA_IT_TC) != RESET)
-    {
-	GPIO_ToggleBits( GPIOD, GPIO_Pin_12);
-    }
-    else if(DMA_GetITStatus(DMA2_Stream0, DMA_IT_HT) != RESET)
-    {
-	GPIO_ToggleBits( GPIOD, GPIO_Pin_13);
-    }
-
-    DMA_ClearITPendingBit(DMA2_Stream0, DMA_IT_TC | DMA_IT_HT);
-    //blablabla
-}
