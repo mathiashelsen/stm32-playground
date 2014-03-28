@@ -6,6 +6,8 @@
 #include <math.h>
 #include <stdlib.h>
 
+#include "usart.h"
+
 volatile uint16_t *samplesBuffer;
 volatile uint16_t *usartBuffer;
 volatile uint32_t triggerFrame; // A number between 0..3 that indicates
@@ -13,8 +15,8 @@ volatile uint32_t triggerFrame; // A number between 0..3 that indicates
 volatile uint32_t transmitting;
 volatile uint16_t triggerLevel;
 
-#define ADC_PERIOD  4200 // Divider for the ADC clock
-#define SAMPLES	    1024 // Number of samples for each acquisition
+#define ADC_PERIOD  419 // 100kSamples
+#define SAMPLES	    1024 // Number of samples for each acquisition/frame
 
 void init_clock(void);
 void init_ADC(void);
@@ -23,10 +25,17 @@ int main(void)
 {
     NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 ); 
 
-    samplesBuffer = malloc(sizeof(uint16_t)*SAMPLES*4);
+    samplesBuffer   = malloc(sizeof(uint16_t)*SAMPLES*4);
+    usartBuffer	    = malloc(sizeof(uint16_t)*(SAMPLES+1));
+    *usartBuffer    = 0xFFFF; // The first halfword will be all ones to signal a frame
+
+    triggerFrame = 3;
+    transmitting = 0;
+    triggerLevel = (0xFFF >> 1); // trigger halfway
 
     init_clock();
     init_ADC();
+    init_USART1(480000);
 
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
     GPIO_InitTypeDef gpio = {0, };
@@ -51,6 +60,11 @@ int main(void)
 
 }
 
+void USART1_IRQHandler(void)
+{
+    USART_ClearITPendingBit(USART1, USART_IT_RXNE);
+}
+
 void TIM3_IRQHandler(void)
 {
     TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
@@ -63,7 +77,7 @@ void TIM3_IRQHandler(void)
      * pointer wrapping into the start of the circular ADC buffer.
      */ 
     uint16_t *triggerPoint = NULL;
-    uint16_t *sptr = samplesBuffer + 1024*triggerFrame;
+    uint16_t *sptr = (uint16_t *) (samplesBuffer + 1024*triggerFrame);
     uint16_t x0, x1, x2, x3, x4;
     uint32_t N = (SAMPLES>>2)-2;
 
@@ -115,6 +129,8 @@ void TIM3_IRQHandler(void)
 	x4 = *sptr; // x0 = x4 in the next iteration
     }while(N--);
     // Process last 4 samples manually
+    // not yet implemented
+
     // Update the triggerFrame
     triggerFrame++;
     if( triggerFrame == 4 )
@@ -127,14 +143,44 @@ void TIM3_IRQHandler(void)
      */ 
     if(triggerPoint && !transmitting)
     {
-	
-	// Start transmitting using DMA
-	/*
-	DMA_InitTypeDef;
-	void DMA_Init(DMA_Stream_TypeDef* DMAy_Streamx, DMA_InitTypeDef* DMA_InitStruct);
-	void DMA_Cmd(DMA_Stream_TypeDef* DMAy_Streamx, FunctionalState NewState);
-	*/
+	// Copy the data
+	transmitting = 1;	
+	// Start transmitting using DMA, interrupt when finished -> transmitting = 0
+	DMA_InitTypeDef usartDMA = {0, };
+	usartDMA.DMA_Channel = DMA_Channel_4; // channel 4, stream 7 = USART1_TX	
+	usartDMA.DMA_PeripheralBaseAddr = (uint32_t) USART1->DR;
+	usartDMA.DMA_Memory0BaseAddr = (uint32_t) usartBuffer;
+	usartDMA.DMA_DIR = DMA_DIR_MemoryToPeripheral;
+	usartDMA.DMA_BufferSize = SAMPLES + 1;
+	usartDMA.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+	usartDMA.DMA_MemoryInc = DMA_MemoryInc_Enable; 
+	usartDMA.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+	usartDMA.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;
+	usartDMA.DMA_Mode = DMA_Mode_Normal;
+	usartDMA.DMA_Priority = DMA_Priority_Low; // This DMA is shared with the ADC, which has priority ofcourse
+	usartDMA.DMA_FIFOMode = DMA_FIFOMode_Disable;
+	usartDMA.DMA_MemoryBurst = DMA_MemoryBurst_Single;
+	usartDMA.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
+
+	DMA_Init( DMA2_Stream7, &usartDMA );
+	DMA_ClearITPendingBit( DMA2_Stream7, DMA_IT_TC);
+	DMA_ITConfig(DMA2_Stream7, DMA_IT_TC, ENABLE );
+
+	// Configure interrupts
+	NVIC_InitTypeDef NVIC_InitStructure;
+	NVIC_InitStructure.NVIC_IRQChannel = DMA2_Stream7_IRQn;        // Configure USART1 interrupts
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;// Priority group
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;       // Subpriority inside the group
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;          // enable globally
+	NVIC_Init(&NVIC_InitStructure);
+	DMA_Cmd( DMA2_Stream7, ENABLE );
     }
+}
+
+void DMA2_Stream7_IRQHandler(void)
+{
+    DMA_ClearITPendingBit( DMA2_Stream7, DMA_IT_TC );
+    transmitting = 0;
 }
 
 void init_clock(void)
