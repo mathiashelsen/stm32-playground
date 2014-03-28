@@ -10,6 +10,7 @@ volatile uint16_t *samplesBuffer;
 volatile uint16_t *usartBuffer;
 volatile uint32_t triggerFrame; // A number between 0..3 that indicates
 				// in which frame we need to look for a trigger
+volatile uint32_t transmitting;
 volatile uint16_t triggerLevel;
 
 #define ADC_PERIOD  4200 // Divider for the ADC clock
@@ -97,7 +98,7 @@ void TIM3_IRQHandler(void)
 		N = 0;
 	    }
 	}
-	else if((N != 0) && (x2 > triggerLevel) )
+	else if((N != 0) && (x3 > triggerLevel) )
 	{
 	    if( x4 > x3 )
 	    {
@@ -106,6 +107,7 @@ void TIM3_IRQHandler(void)
 	    }
 	}
 
+	// Prepare the data for the next iteration
 	x0 = *sptr++;
 	x1 = *sptr++;
 	x2 = *sptr++;
@@ -127,9 +129,11 @@ void TIM3_IRQHandler(void)
     {
 	
 	// Start transmitting using DMA
+	/*
 	DMA_InitTypeDef;
 	void DMA_Init(DMA_Stream_TypeDef* DMAy_Streamx, DMA_InitTypeDef* DMA_InitStruct);
 	void DMA_Cmd(DMA_Stream_TypeDef* DMAy_Streamx, FunctionalState NewState);
+	*/
     }
 }
 
@@ -158,15 +162,12 @@ void init_clock(void)
 
     // Init
     TIM_TimeBaseInit(TIM3, &TIMInit );
-    //TIM_SelectOnePulseMode(TIM3, TIM_OPMode_Single);	// Only one pulse (TRGO2 will restart the timer)
     TIM_SelectSlaveMode(TIM3, TIM_SlaveMode_Trigger);	// TIM3 will be a slave to TIM2
-  //  TIM_SelectInputTrigger(TIM3, TIM_TS_ITR1);		// Set the input trigger to TRGO2 = ITR1 (ITR = TRGO - 1 ;-)
     TIM_ITRxExternalClockConfig(TIM3, TIM_TS_ITR1);
    
     TIM_Cmd(TIM3, ENABLE);
-    // To test the config, we will be calling interrupts
-    TIM_ITConfig( TIM3, TIM_IT_Update, ENABLE);	    // Enable an interrupt for TIM3 when it Updates
     TIM_ClearITPendingBit( TIM3, TIM_IT_Update);    // Clear the Update bit
+    TIM_ITConfig( TIM3, TIM_IT_Update, ENABLE);	    // Enable an interrupt for TIM3 when it Updates
 
     // NVIC config
     NVIC_InitTypeDef NVIC_InitStructure;
@@ -213,13 +214,12 @@ void init_ADC(void)
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2, ENABLE);
 
     // Configure the DMA stream for ADC -> memory
-    
     DMA_InitTypeDef DMAInit = {0, };
     DMAInit.DMA_Channel	    = DMA_Channel_0; // DMA channel 0 stream 0 is mapped to ADC1
     DMAInit.DMA_PeripheralBaseAddr  = (uint32_t) ADC1->DR;
     DMAInit.DMA_Memory0BaseAddr	    = (uint32_t) samplesBuffer; // Copy data from the buffer
     DMAInit.DMA_DIR	    = DMA_DIR_PeripheralToMemory;
-    DMAInit.DMA_BufferSize  = 2048;
+    DMAInit.DMA_BufferSize  = SAMPLES*4;
     DMAInit.DMA_PeripheralInc	    = DMA_PeripheralInc_Disable; // Do not increase the periph pointer
     DMAInit.DMA_MemoryInc   = DMA_MemoryInc_Enable; // But do increase the memory pointer
     DMAInit.DMA_PeripheralDataSize  = DMA_PeripheralDataSize_HalfWord; //16 bits only please
@@ -235,14 +235,5 @@ void init_ADC(void)
     DMA_Init( DMA2_Stream0, &DMAInit );
     DMA_Cmd( DMA2_Stream0 , ENABLE );
     
-    // Now sampling from the input pin PA1
-    /*
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
-    GPIO_InitTypeDef gpioInit = {0, };
-    gpioInit.GPIO_Pin = GPIO_Pin_1;
-    gpioInit.GPIO_Mode = GPIO_Mode_AN;
-    GPIO_Init(GPIOA, &gpioInit);
-    */
-   
 }
 
