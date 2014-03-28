@@ -8,6 +8,9 @@
 
 volatile uint16_t *samplesBuffer;
 volatile uint16_t *usartBuffer;
+volatile uint32_t triggerFrame; // A number between 0..3 that indicates
+				// in which frame we need to look for a trigger
+volatile uint16_t triggerLevel;
 
 #define ADC_PERIOD  4200 // Divider for the ADC clock
 #define SAMPLES	    1024 // Number of samples for each acquisition
@@ -51,14 +54,68 @@ void TIM3_IRQHandler(void)
 {
     TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
     GPIO_ToggleBits( GPIOD, GPIO_Pin_12 );
-    uint32_t triggered = 0;
+   
+    /*
+     * TRIGGER DETECTION
+     */ 
     uint16_t *triggerPoint = NULL;
-    // Check if we have trigger (loop over all samples)
+    uint16_t *sptr = samplesBuffer + 1024*triggerFrame;
+    uint16_t x0, x1, x2, x3, x4;
+    uint32_t N = SAMPLES>>2;
+    do
+    {
+	x0 = *sptr++;
+	x1 = *sptr++;
+	x2 = *sptr++;
+	x3 = *sptr++;
+	x4 = *sptr; // x0 = x4 in the next iteration
+	if(x0 > triggerLevel)
+	{
+	    if( x1 > x0 )
+	    {
+		triggerPoint = sptr-4;
+		N = 0;
+	    }
+	}
+	else if( (N != 0) && (x1 > triggerLevel))
+	{
+	    if( x2 > x1 )
+	    {
+		triggerPoint = sptr-3;
+		N = 0;
+	    }
+	}
+	else if((N != 0) && (x2 > triggerLevel) )
+	{
+	    if( x3 > x2 )
+	    {
+		triggerPoint = sptr-2;
+		N = 0;
+	    }
+	}
+	else if((N != 0) && (x2 > triggerLevel) )
+	{
+	    if( x4 > x3 )
+	    {
+		triggerPoint = sptr-1;
+		N = 0;
+	    }
 
-    // Copy from ADC buffer to USART buffer
+	}
+    }while(N--);
+    // Update the triggerFrame
+    triggerFrame++;
+    if( triggerFrame == 4 )
+    {
+	triggerFrame = 0;
+    }
+
+    /*
+     * DATA TRANSFER (IF USART IDLE)
+     */ 
     if(triggerPoint && !transmitting)
     {
-
+	
 	// Start transmitting using DMA
 	DMA_InitTypeDef;
 	void DMA_Init(DMA_Stream_TypeDef* DMAy_Streamx, DMA_InitTypeDef* DMA_InitStruct);
@@ -87,7 +144,7 @@ void init_clock(void)
     // Enable clock to TIM3
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
 
-    TIMInit.TIM_Period		    = 1023; // Wait for 1024 samples to be aqcuired
+    TIMInit.TIM_Period		    = SAMPLES-1; // Wait for 1024 samples to be aqcuired
 
     // Init
     TIM_TimeBaseInit(TIM3, &TIMInit );
@@ -150,7 +207,7 @@ void init_ADC(void)
     DMA_InitTypeDef DMAInit = {0, };
     DMAInit.DMA_Channel	    = DMA_Channel_0; // DMA channel 0 stream 0 is mapped to ADC1
     DMAInit.DMA_PeripheralBaseAddr  = (uint32_t) ADC1->DR;
-    DMAInit.DMA_Memory0BaseAddr	    = (uint32_t) samples; // Copy data from the buffer
+    DMAInit.DMA_Memory0BaseAddr	    = (uint32_t) samplesBuffer; // Copy data from the buffer
     DMAInit.DMA_DIR	    = DMA_DIR_PeripheralToMemory;
     DMAInit.DMA_BufferSize  = 2048;
     DMAInit.DMA_PeripheralInc	    = DMA_PeripheralInc_Disable; // Do not increase the periph pointer
