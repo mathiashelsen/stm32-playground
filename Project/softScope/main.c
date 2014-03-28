@@ -57,18 +57,22 @@ void TIM3_IRQHandler(void)
    
     /*
      * TRIGGER DETECTION
+     * The while loop has been unrolled four times, to avoid unnecessary overhead
+     * and the last four samples have been cut-off from the loop to account for possible
+     * pointer wrapping into the start of the circular ADC buffer.
      */ 
     uint16_t *triggerPoint = NULL;
     uint16_t *sptr = samplesBuffer + 1024*triggerFrame;
     uint16_t x0, x1, x2, x3, x4;
-    uint32_t N = SAMPLES>>2;
+    uint32_t N = (SAMPLES>>2)-2;
+
+    x0 = *sptr++;
+    x1 = *sptr++;
+    x2 = *sptr++;
+    x3 = *sptr++;
+    x4 = *sptr; // x0 = x4 in the next iteration
     do
     {
-	x0 = *sptr++;
-	x1 = *sptr++;
-	x2 = *sptr++;
-	x3 = *sptr++;
-	x4 = *sptr; // x0 = x4 in the next iteration
 	if(x0 > triggerLevel)
 	{
 	    if( x1 > x0 )
@@ -100,9 +104,15 @@ void TIM3_IRQHandler(void)
 		triggerPoint = sptr-1;
 		N = 0;
 	    }
-
 	}
+
+	x0 = *sptr++;
+	x1 = *sptr++;
+	x2 = *sptr++;
+	x3 = *sptr++;
+	x4 = *sptr; // x0 = x4 in the next iteration
     }while(N--);
+    // Process last 4 samples manually
     // Update the triggerFrame
     triggerFrame++;
     if( triggerFrame == 4 )
