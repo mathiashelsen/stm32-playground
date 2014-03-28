@@ -8,12 +8,18 @@
 
 #include "usart.h"
 
+#define STATE_IDLE	(int32_t) 0
+#define STATE_PROCESS	(int32_t) 1
+#define STATE_OVERFLOW	(int32_t) -1
+
 volatile uint16_t *samplesBuffer;
 volatile uint16_t *usartBuffer;
 volatile uint32_t triggerFrame; // A number between 0..3 that indicates
 				// in which frame we need to look for a trigger
 volatile uint32_t transmitting;
 volatile uint16_t triggerLevel;
+
+volatile int32_t state;
 
 #define ADC_PERIOD  419 // 100kSamples
 #define SAMPLES	    1024 // Number of samples for each acquisition/frame
@@ -51,15 +57,129 @@ int main(void)
     gpio.GPIO_Pin = GPIO_Pin_1;
     gpio.GPIO_Mode = GPIO_Mode_AN;
     GPIO_Init(GPIOA, &gpio);
+
+    state = STATE_IDLE;
     
     TIM_Cmd(TIM2, ENABLE);
     while(1)
     {
+	if( state == STATE_PROCESS )
+	{
+	    /*
+	    * TRIGGER DETECTION
+	    * The while loop has been unrolled four times, to avoid unnecessary overhead
+	    * and the last four samples have been cut-off from the loop to account for possible
+	    * pointer wrapping into the start of the circular ADC buffer.
+	    */ 
+	    uint16_t *triggerPoint = NULL;
+	    uint16_t *sptr = (uint16_t *) (samplesBuffer + 1024*triggerFrame);
+	    uint16_t x0, x1, x2, x3, x4;
+	    uint32_t N = (SAMPLES>>2)-2;
 	
+	    x0 = *sptr++;
+	    x1 = *sptr++;
+	    x2 = *sptr++;
+	    x3 = *sptr++;
+	    x4 = *sptr; // x0 = x4 in the next iteration
+	    do
+	    {
+		if(x0 > triggerLevel)
+		{
+		    if( x1 > x0 )
+		    {
+			triggerPoint = sptr-4;
+			N = 0;
+		    }
+		}
+		else if( (N != 0) && (x1 > triggerLevel))
+		{
+		    if( x2 > x1 )
+		    {
+			triggerPoint = sptr-3;
+			N = 0;
+		    }
+		}
+		else if((N != 0) && (x2 > triggerLevel) )
+		{
+		    if( x3 > x2 )
+		    {
+			triggerPoint = sptr-2;
+			N = 0;
+		    }
+		}
+		else if((N != 0) && (x3 > triggerLevel) )
+		{
+		    if( x4 > x3 )
+		    {
+			triggerPoint = sptr-1;
+			N = 0;
+		    }
+		}
+	
+		// Prepare the data for the next iteration
+		x0 = *sptr++;
+		x1 = *sptr++;
+		x2 = *sptr++;
+		x3 = *sptr++;
+		x4 = *sptr; // x0 = x4 in the next iteration
+	    }while(N--);
+	    // Process last 4 samples manually
+	    // not yet implemented
+	
+	    // Update the triggerFrame
+	    triggerFrame++;
+	    if( triggerFrame == 4 )
+	    {
+		triggerFrame = 0;
+	    }
+	
+	    /*
+	    * DATA TRANSFER (IF USART IDLE)
+	    */ 
+	    if(triggerPoint && !transmitting)
+	    {
+		// Copy the data
+		// ... woops! not yet implemented!
+	
+		transmitting = 1;	
+		// Start transmitting using DMA, interrupt when finished -> transmitting = 0
+		DMA_InitTypeDef usartDMA = {0, };
+		usartDMA.DMA_Channel = DMA_Channel_4; // channel 4, stream 7 = USART1_TX	
+		usartDMA.DMA_PeripheralBaseAddr = (uint32_t) USART1->DR;
+		usartDMA.DMA_Memory0BaseAddr = (uint32_t) usartBuffer;
+		usartDMA.DMA_DIR = DMA_DIR_MemoryToPeripheral;
+		usartDMA.DMA_BufferSize = SAMPLES + 1;
+		usartDMA.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+		usartDMA.DMA_MemoryInc = DMA_MemoryInc_Enable; 
+		usartDMA.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+		usartDMA.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;
+		usartDMA.DMA_Mode = DMA_Mode_Normal;
+		usartDMA.DMA_Priority = DMA_Priority_Low; // This DMA is shared with the ADC, which has priority ofcourse
+		usartDMA.DMA_FIFOMode = DMA_FIFOMode_Disable;
+		usartDMA.DMA_MemoryBurst = DMA_MemoryBurst_Single;
+		usartDMA.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
+	
+		DMA_Init( DMA2_Stream7, &usartDMA );
+		DMA_ClearITPendingBit( DMA2_Stream7, DMA_IT_TC);
+		DMA_ITConfig(DMA2_Stream7, DMA_IT_TC, ENABLE );
+	
+		// Configure interrupts
+		NVIC_InitTypeDef NVIC_InitStructure;
+		NVIC_InitStructure.NVIC_IRQChannel = DMA2_Stream7_IRQn;        // Configure USART1 interrupts
+		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;// Priority group
+		NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;       // Subpriority inside the group
+		NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;          // enable globally
+		NVIC_Init(&NVIC_InitStructure);
+		DMA_Cmd( DMA2_Stream7, ENABLE );
+	    }
+	}
+	else if (state == STATE_OVERFLOW )
+	{
+	
+	}
     }
-
 }
-
+	
 void USART1_IRQHandler(void)
 {
     USART_ClearITPendingBit(USART1, USART_IT_RXNE);
@@ -69,114 +189,14 @@ void TIM3_IRQHandler(void)
 {
     TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
     GPIO_ToggleBits( GPIOD, GPIO_Pin_12 );
-   
-    /*
-     * TRIGGER DETECTION
-     * The while loop has been unrolled four times, to avoid unnecessary overhead
-     * and the last four samples have been cut-off from the loop to account for possible
-     * pointer wrapping into the start of the circular ADC buffer.
-     */ 
-    uint16_t *triggerPoint = NULL;
-    uint16_t *sptr = (uint16_t *) (samplesBuffer + 1024*triggerFrame);
-    uint16_t x0, x1, x2, x3, x4;
-    uint32_t N = (SAMPLES>>2)-2;
-
-    x0 = *sptr++;
-    x1 = *sptr++;
-    x2 = *sptr++;
-    x3 = *sptr++;
-    x4 = *sptr; // x0 = x4 in the next iteration
-    do
+    if( state == STATE_PROCESS )
     {
-	if(x0 > triggerLevel)
-	{
-	    if( x1 > x0 )
-	    {
-		triggerPoint = sptr-4;
-		N = 0;
-	    }
-	}
-	else if( (N != 0) && (x1 > triggerLevel))
-	{
-	    if( x2 > x1 )
-	    {
-		triggerPoint = sptr-3;
-		N = 0;
-	    }
-	}
-	else if((N != 0) && (x2 > triggerLevel) )
-	{
-	    if( x3 > x2 )
-	    {
-		triggerPoint = sptr-2;
-		N = 0;
-	    }
-	}
-	else if((N != 0) && (x3 > triggerLevel) )
-	{
-	    if( x4 > x3 )
-	    {
-		triggerPoint = sptr-1;
-		N = 0;
-	    }
-	}
-
-	// Prepare the data for the next iteration
-	x0 = *sptr++;
-	x1 = *sptr++;
-	x2 = *sptr++;
-	x3 = *sptr++;
-	x4 = *sptr; // x0 = x4 in the next iteration
-    }while(N--);
-    // Process last 4 samples manually
-    // not yet implemented
-
-    // Update the triggerFrame
-    triggerFrame++;
-    if( triggerFrame == 4 )
-    {
-	triggerFrame = 0;
+	state = STATE_OVERFLOW;
     }
-
-    /*
-     * DATA TRANSFER (IF USART IDLE)
-     */ 
-    if(triggerPoint && !transmitting)
+    else
     {
-	// Copy the data
-	// ... woops! not yet implemented!
-
-	transmitting = 1;	
-	// Start transmitting using DMA, interrupt when finished -> transmitting = 0
-	DMA_InitTypeDef usartDMA = {0, };
-	usartDMA.DMA_Channel = DMA_Channel_4; // channel 4, stream 7 = USART1_TX	
-	usartDMA.DMA_PeripheralBaseAddr = (uint32_t) USART1->DR;
-	usartDMA.DMA_Memory0BaseAddr = (uint32_t) usartBuffer;
-	usartDMA.DMA_DIR = DMA_DIR_MemoryToPeripheral;
-	usartDMA.DMA_BufferSize = SAMPLES + 1;
-	usartDMA.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-	usartDMA.DMA_MemoryInc = DMA_MemoryInc_Enable; 
-	usartDMA.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-	usartDMA.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;
-	usartDMA.DMA_Mode = DMA_Mode_Normal;
-	usartDMA.DMA_Priority = DMA_Priority_Low; // This DMA is shared with the ADC, which has priority ofcourse
-	usartDMA.DMA_FIFOMode = DMA_FIFOMode_Disable;
-	usartDMA.DMA_MemoryBurst = DMA_MemoryBurst_Single;
-	usartDMA.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
-
-	DMA_Init( DMA2_Stream7, &usartDMA );
-	DMA_ClearITPendingBit( DMA2_Stream7, DMA_IT_TC);
-	DMA_ITConfig(DMA2_Stream7, DMA_IT_TC, ENABLE );
-
-	// Configure interrupts
-	NVIC_InitTypeDef NVIC_InitStructure;
-	NVIC_InitStructure.NVIC_IRQChannel = DMA2_Stream7_IRQn;        // Configure USART1 interrupts
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;// Priority group
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;       // Subpriority inside the group
-	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;          // enable globally
-	NVIC_Init(&NVIC_InitStructure);
-	DMA_Cmd( DMA2_Stream7, ENABLE );
-    }
+	state = STATE_PROCESS;
+    } 
 }
 
 void DMA2_Stream7_IRQHandler(void)
