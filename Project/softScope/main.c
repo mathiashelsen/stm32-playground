@@ -144,6 +144,8 @@ void TIM3_IRQHandler(void)
     if(triggerPoint && !transmitting)
     {
 	// Copy the data
+	// ... woops! not yet implemented!
+
 	transmitting = 1;	
 	// Start transmitting using DMA, interrupt when finished -> transmitting = 0
 	DMA_InitTypeDef usartDMA = {0, };
