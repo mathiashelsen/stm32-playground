@@ -51,6 +51,7 @@ int main(void)
     gpio.GPIO_Speed = GPIO_Speed_25MHz;
     gpio.GPIO_PuPd = GPIO_PuPd_NOPULL;
     GPIO_Init(GPIOD, &gpio);
+    GPIO_ResetBits(GPIOD, GPIO_Pin_12 | GPIO_Pin_13 );
 
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
     memset((void*) &gpio, 0, sizeof(GPIO_InitTypeDef));
@@ -65,6 +66,7 @@ int main(void)
     {
 	if( state == STATE_PROCESS )
 	{
+	    GPIO_SetBits(GPIOD, GPIO_Pin_13);
 	    /*
 	    * TRIGGER DETECTION
 	    * The while loop has been unrolled four times, to avoid unnecessary overhead
@@ -139,7 +141,20 @@ int main(void)
 	    if(triggerPoint && !transmitting)
 	    {
 		// Copy the data
-		// ... woops! not yet implemented!
+		if(triggerFrame > 0)
+		{
+		    // Data was from frame 0..2 
+		    memmove((void *)usartBuffer+1, (void *)triggerPoint, 1024*2);
+		}
+		else
+		{
+		    // This is the number of samples till we wrap to the first frame
+		    int32_t samples = (samplesBuffer + 4*1024 - 1 - triggerPoint);
+		    // A block needs to be copied from the last frame
+		    memmove((void *)usartBuffer+1, (void *)triggerPoint, samples*2);
+		    // and a part from the first frame
+		    memmove((void *)usartBuffer+1+samples, (void *)samplesBuffer, (1024-samples)*2);
+		}
 	
 		transmitting = 1;	
 		// Start transmitting using DMA, interrupt when finished -> transmitting = 0
@@ -172,9 +187,12 @@ int main(void)
 		NVIC_Init(&NVIC_InitStructure);
 		DMA_Cmd( DMA2_Stream7, ENABLE );
 	    }
+	    GPIO_ResetBits(GPIOD, GPIO_Pin_13);
+	    state = STATE_IDLE;
 	}
 	else if (state == STATE_OVERFLOW )
 	{
+	    GPIO_SetBits(GPIOD, GPIO_Pin_12);
 	
 	}
     }
