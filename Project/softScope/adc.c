@@ -82,3 +82,9 @@ void init_ADC(volatile uint16_t *samplesBuffer, int SAMPLES) {
 	ADC_SoftwareStartConv(ADC1);
 }
 
+void ADC_IRQHandler(void) {
+	ADC_ClearITPendingBit(ADC1 , ADC_IT_OVR);
+	ADC_ClearFlag(ADC1, ADC_FLAG_OVR);
+	DMA_Cmd( DMA2_Stream0, ENABLE );
+}
+

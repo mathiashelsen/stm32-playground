@@ -158,13 +158,6 @@ void DMA2_Stream7_IRQHandler(void) {
 	transmitting = 0;
 }
 
-void ADC_IRQHandler(void) {
-	ADC_ClearITPendingBit(ADC1 , ADC_IT_OVR);
-	ADC_ClearFlag(ADC1, ADC_FLAG_OVR);
-	DMA_Cmd( DMA2_Stream0, ENABLE );
-}
-
-
 void TIM3_IRQHandler(void) {
 	TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
 
