@@ -151,7 +151,7 @@ int main(void)
 		if(triggerFrame > 0)
 		{
 		    // Data was from frame 0..2 
-		    memcpy((void *)(usartBuffer+1), (void *)triggerPoint, 1024*2);
+		    memcpy32((void *)(usartBuffer+1), (void *)triggerPoint, 1024*2);
 		}
 		else
 		{
