@@ -152,16 +152,16 @@ int main(void)
 		if(triggerFrame > 0)
 		{
 		    // Data was from frame 0..2 
-		    memcpy16((void *)(usartBuffer+1), (void *)triggerPoint, 1024*2);
+		    memcpy16((uint16_t*)(usartBuffer+1), (uint16_t*)triggerPoint, 1024*2);
 		}
 		else
 		{
 		    // This is the number of samples till we wrap to the first frame
 		    int32_t samples = (int32_t)(samplesBuffer + 4*1024 - 1 - triggerPoint);
 		    // A block needs to be copied from the last frame
-		    memcpy((void *)(usartBuffer+1), (void *)triggerPoint, samples*2);
+		    memcpy16((uint16_t*)(usartBuffer+1), (uint16_t*)triggerPoint, samples*2);
 		    // and a part from the first frame
-		    memcpy((void *)(usartBuffer+1+samples), (void *)samplesBuffer, (1024-samples)*2);
+		    memcpy16((uint16_t*)(usartBuffer+1+samples), (uint16_t*)samplesBuffer, (1024-samples)*2);
 		}
 
 		GPIO_SetBits(GPIOD, GPIO_Pin_14);
@@ -231,7 +231,6 @@ void DMA2_Stream7_IRQHandler(void)
 {
     //DMA_ClearITPendingBit( DMA2_Stream7, DMA_IT_TC );
     DMA2->HIFCR = (1 << 27 | 1 << 26);
-    volatile uint32_t tmp = DMA2->HISR;
 
     USART_DMACmd(USART1, USART_DMAReq_Tx, DISABLE);
     GPIO_ResetBits(GPIOD, GPIO_Pin_14);

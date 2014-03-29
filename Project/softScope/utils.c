@@ -10,4 +10,11 @@ void memcpy16(uint16_t *dest, uint16_t *src, uint32_t nBytes)
 	*dest++ = *src++;
 	*dest++ = *src++;
     }while(--N);
+
+    N = nBytes & 0x7; // For the remaining bytes
+    do
+    {
+	*dest++ = *src++;
+    }while(--N);
+    
 }
