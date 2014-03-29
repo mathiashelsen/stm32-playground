@@ -12,8 +12,8 @@
 #define STATE_PROCESS	(int32_t) 1
 #define STATE_OVERFLOW	(int32_t) -1
 
-volatile uint16_t *samplesBuffer;
-volatile uint16_t *usartBuffer;
+volatile uint16_t *samplesBuffer; // The samples buffer is divided into 4 frames
+volatile uint16_t *usartBuffer; // The usart buffer holds a status HW and 1 frame
 volatile uint32_t triggerFrame; // A number between 0..3 that indicates
 				// in which frame we need to look for a trigger
 volatile uint32_t transmitting;
