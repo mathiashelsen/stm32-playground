@@ -1,4 +1,5 @@
-#include "stm32f4xx.h"
+#include <stm32f4xx.h>
+#include <stdlib.h>
 
 #include "clock.h"
 
@@ -49,7 +50,7 @@ function clock_TIM3_IRQHook;
 
 void TIM3_IRQHandler(void) {
 	TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
- 	if (clock_TIM3_IRQHook != 0){
+ 	if (clock_TIM3_IRQHook != NULL){
 		clock_TIM3_IRQHook();
 	}
 }

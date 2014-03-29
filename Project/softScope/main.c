@@ -1,9 +1,6 @@
-#include "stm32f4xx.h"
 #include <misc.h>
-#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <math.h>
 #include <stdlib.h>
 
 #include "adc.h"
@@ -151,7 +148,6 @@ int main(void) {
 			state = STATE_IDLE;
 		} else if (state == STATE_OVERFLOW ) {
 			GPIO_SetBits(GPIOD, GPIO_Pin_12);
-
 		}
 	}
 }

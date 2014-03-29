@@ -5,12 +5,14 @@
  */
 #include <misc.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <stm32f4xx.h>
 #include <stm32f4xx_usart.h>
 
 #include "usart.h"
 
 volatile uint32_t transmitting;
+function USART_postTXHook;
 
 void init_USART1(uint32_t baudrate) {
 
@@ -103,7 +105,11 @@ void USART_asyncTX(volatile uint16_t *usartBuffer, int SAMPLES) {
 }
 
 
-// this is the interrupt request handler (IRQ) for ALL USART1 interrupts
+
+void USART1_IRQHandler(void) {
+	USART_ClearITPendingBit(USART1, USART_IT_RXNE);
+}
+
 // void USART1_IRQHandler(void) {
 //
 // 	// check if the USART1 receive interrupt flag was set
@@ -114,11 +120,6 @@ void USART_asyncTX(volatile uint16_t *usartBuffer, int SAMPLES) {
 // }
 //
 
-void USART1_IRQHandler(void) {
-	USART_ClearITPendingBit(USART1, USART_IT_RXNE);
-}
-
-function USART_postTXHook;
 
 void DMA2_Stream7_IRQHandler(void) {
 	//DMA_ClearITPendingBit( DMA2_Stream7, DMA_IT_TC );
@@ -128,7 +129,7 @@ void DMA2_Stream7_IRQHandler(void) {
 	GPIO_ResetBits(GPIOD, GPIO_Pin_14);
 	DMA_Cmd( DMA2_Stream7, DISABLE );
 	transmitting = 0;
-	if (USART_postTXHook != 0){
+	if (USART_postTXHook != NULL){
 		USART_postTXHook();
 	}
 }
