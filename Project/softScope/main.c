@@ -29,7 +29,13 @@ volatile int32_t state;
 #define ADC_PERIOD  419 // 100kSamples
 #define SAMPLES	    1024 // Number of samples for each acquisition/frame
 
-
+void TIM3_IRQHook(){
+	if( state == STATE_PROCESS ) {
+		state = STATE_OVERFLOW;
+	} else {
+		state = STATE_PROCESS;
+	}
+}
 
 int main(void) {
 	//ADCx = ADC1;
@@ -47,6 +53,7 @@ int main(void) {
 	triggerLevel = (0xFFF >> 1); // trigger halfway
 
 	init_clock(ADC_PERIOD, SAMPLES);
+	clock_TIM3_IRQHook = TIM3_IRQHook; // add to interrupt handler
 	init_ADC(samplesBuffer, SAMPLES);
 	init_USART1(115200);
 	init_analogIn();
@@ -150,16 +157,4 @@ int main(void) {
 }
 
 
-void TIM3_IRQHook(){
-	if( state == STATE_PROCESS ) {
-		state = STATE_OVERFLOW;
-	} else {
-		state = STATE_PROCESS;
-	}
-}
-
-void TIM3_IRQHandler(void) {
-	TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
- 	TIM3_IRQHook();
-}
 

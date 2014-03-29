@@ -1,5 +1,6 @@
 #include "stm32f4xx.h"
 
+#include "clock.h"
 
 void init_clock(int ADC_PERIOD, int SAMPLES) {
 	// Enable the clock to the timer
@@ -42,5 +43,14 @@ void init_clock(int ADC_PERIOD, int SAMPLES) {
 
 void enable_clock(){
 	TIM_Cmd(TIM2, ENABLE);
+}
+
+function clock_TIM3_IRQHook;
+
+void TIM3_IRQHandler(void) {
+	TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
+ 	if (clock_TIM3_IRQHook != 0){
+		clock_TIM3_IRQHook();
+	}
 }
 
