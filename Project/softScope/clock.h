@@ -1,12 +1,15 @@
 #ifndef _CLOCK_H_
 #define _CLOCK_H_
 
-#include "usart.h"  // TODO: rm, split-off typedef function
+#include "usart.h"  // for definition of "function"
 
+// Starts the ADC clock
 void enable_clock();
 
+// Initialize the ADC clock
 void init_clock(int ADC_PERIOD, int SAMPLES);
 
+// Called at the end of TIM3_IRQHandler.
 function clock_TIM3_IRQHook;
 
 #endif
