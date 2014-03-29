@@ -25,7 +25,6 @@ func NewState(m map[string]interface{}) State {
 }
 
 func (s *State) WriteTo(w tty) {
-	w.writeInt(MAGIC)
 	w.writeInt(s.Samples)
 	w.writeInt(s.TimeBase)
 	w.writeInt(s.TrigLev)
