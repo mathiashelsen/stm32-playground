@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "adc.h"
+
 void init_analogIn(){
 	GPIO_InitTypeDef gpio = {0, };
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);

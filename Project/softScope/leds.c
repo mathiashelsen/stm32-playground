@@ -1,5 +1,7 @@
 #include <stm32f4xx.h>
 
+#include "leds.h"
+
 void init_LEDS(void) {
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
 	GPIO_InitTypeDef gpio = {0, };
