@@ -8,6 +8,7 @@
 
 #include "adc.h"
 #include "clock.h"
+#include "leds.h"
 #include "usart.h"
 #include "utils.h"
 
@@ -52,16 +53,8 @@ int main(void) {
 	//uint8_t hallo[] = "Hello!";
 	//USART_TX( USART1, hallo, strlen((char *)hallo));
 
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
-	GPIO_InitTypeDef gpio = {0, };
-	gpio.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14;
-	gpio.GPIO_Mode = GPIO_Mode_OUT;
-	gpio.GPIO_OType = GPIO_OType_PP;
-	gpio.GPIO_Speed = GPIO_Speed_25MHz;
-	gpio.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_Init(GPIOD, &gpio);
-	GPIO_ResetBits(GPIOD, GPIO_Pin_12 | GPIO_Pin_13 );
 
+	GPIO_InitTypeDef gpio = {0, };
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
 	memset((void*) &gpio, 0, sizeof(GPIO_InitTypeDef));
 	gpio.GPIO_Pin = GPIO_Pin_1;
