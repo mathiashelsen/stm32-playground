@@ -10,7 +10,7 @@ type State struct {
 	Samples  int
 	TimeBase int
 	TrigLev  int
-	SoftGain  int
+	SoftGain int
 }
 
 func NewState(m map[string]interface{}) State {

@@ -14,18 +14,16 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func eventHandler(w http.ResponseWriter, r *http.Request) {
-		dataLock.Lock()
-		defer dataLock.Unlock()
 
 	switch r.Method {
-	case "GET":
-		json.NewEncoder(w).Encode(&state)
+	//	case "GET":
+	//		json.NewEncoder(w).Encode(&state)
 
 	case "PUT":
 
 		m := make(map[string]interface{})
 		check(json.NewDecoder(r.Body).Decode(&m))
-		state = NewState(m)
+		state := NewState(m)
 		state.WriteTo(serial)
 	}
 }
