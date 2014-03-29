@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	screenW, screenH = 512, 256
+	screenW, screenH = 1024, 256
 	gridDiv          = 32
 )
 
@@ -31,12 +31,10 @@ func screenHandler(w http.ResponseWriter, r *http.Request) {
 	// Data
 	x := make([]int, BUFSIZE)
 	y := make([]int, BUFSIZE)
-	dataLock.Lock()
-	for i := range data {
+	for i := range buffer {
 		x[i] = i
-		y[i] = screenH - int(data[i])
+		y[i] = screenH - int(buffer[i]/16) // 14-bit to 8-bit
 	}
-	dataLock.Unlock()
 	canvas.Polyline(x, y, "stroke:blue; fill:none; stroke-width:3")
 
 	canvas.End()

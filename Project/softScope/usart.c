@@ -5,8 +5,14 @@
  */
 #include <misc.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <stm32f4xx.h>
 #include <stm32f4xx_usart.h>
+
+#include "usart.h"
+
+volatile bool transmitting;
+function USART_postTXHook;
 
 void init_USART1(uint32_t baudrate) {
 
@@ -30,13 +36,13 @@ void init_USART1(uint32_t baudrate) {
 	GPIO_PinAFConfig(GPIOB, GPIO_PinSource7, GPIO_AF_USART1);
 
 	USART_InitTypeDef USART_InitStruct;
-	USART_InitStruct.USART_BaudRate = baudrate;	
+	USART_InitStruct.USART_BaudRate = baudrate;
 	USART_InitStruct.USART_WordLength = USART_WordLength_8b;                     // 8 bit words
 	USART_InitStruct.USART_StopBits = USART_StopBits_1;                          // 1 stop bit
 	USART_InitStruct.USART_Parity = USART_Parity_No;                             // no parity
 	USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None; // no flow control
 	USART_InitStruct.USART_Mode = USART_Mode_Tx | USART_Mode_Rx;                 // enable TX and RX
-	USART_Init(USART1, &USART_InitStruct);				
+	USART_Init(USART1, &USART_InitStruct);
 
 	// Enable receive interrupt
 	//USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
@@ -47,7 +53,7 @@ void init_USART1(uint32_t baudrate) {
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;// Priority group
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;       // Subpriority inside the group
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;          // enable globally
-	NVIC_Init(&NVIC_InitStructure);                          
+	NVIC_Init(&NVIC_InitStructure);
 
 	// Enable USART
 	USART_Cmd(USART1, ENABLE);
@@ -56,7 +62,7 @@ void init_USART1(uint32_t baudrate) {
 
 void USART_TX(USART_TypeDef* USARTx, uint8_t *data, uint16_t N) {
 	for(uint16_t i=0; i<N; i++) {
-		while( !(USARTx->SR & 0x00000040) ){
+		while( !(USARTx->SR & 0x00000040) ) {
 			// wait until data register is empty
 		}
 		USART_SendData(USARTx, data[i]);
@@ -64,12 +70,69 @@ void USART_TX(USART_TypeDef* USARTx, uint8_t *data, uint16_t N) {
 }
 
 
-// this is the interrupt request handler (IRQ) for ALL USART1 interrupts
+
+void USART_asyncTX(volatile uint16_t *usartBuffer, int SAMPLES) {
+
+	transmitting = 1;
+				
+	// Start transmitting using DMA, interrupt when finished -> transmitting = 0
+	DMA_InitTypeDef usartDMA = {0, };
+	usartDMA.DMA_Channel = DMA_Channel_4; // channel 4, stream 7 = USART1_TX
+	usartDMA.DMA_PeripheralBaseAddr = (uint32_t) &(USART1->DR);
+	usartDMA.DMA_Memory0BaseAddr = (uint32_t) usartBuffer;
+	usartDMA.DMA_DIR = DMA_DIR_MemoryToPeripheral;
+	usartDMA.DMA_BufferSize = SAMPLES + 1;
+	usartDMA.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+	usartDMA.DMA_MemoryInc = DMA_MemoryInc_Enable;
+	usartDMA.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+	usartDMA.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;
+	usartDMA.DMA_Mode = DMA_Mode_Normal;
+	usartDMA.DMA_Priority = DMA_Priority_Low; // This DMA is shared with the ADC, which has priority ofcourse
+	usartDMA.DMA_FIFOMode = DMA_FIFOMode_Disable;
+	usartDMA.DMA_MemoryBurst = DMA_MemoryBurst_Single;
+	usartDMA.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
+
+	DMA_Init( DMA2_Stream7, &usartDMA );
+	DMA_ClearITPendingBit( DMA2_Stream7, DMA_IT_TC);
+	DMA_ITConfig(DMA2_Stream7, DMA_IT_TC, ENABLE );
+	// Configure interrupts
+	NVIC_InitTypeDef NVIC_InitStructure;
+	NVIC_InitStructure.NVIC_IRQChannel = DMA2_Stream7_IRQn;  // Configure USART1 interrupts
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;// Priority group
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;       // Subpriority inside the group
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;          // enable globally
+	NVIC_Init(&NVIC_InitStructure);
+	DMA_Cmd( DMA2_Stream7, ENABLE );
+	USART_DMACmd(USART1, USART_DMAReq_Tx, ENABLE);
+}
+
+
+
+void USART1_IRQHandler(void) {
+	USART_ClearITPendingBit(USART1, USART_IT_RXNE);
+}
+
 // void USART1_IRQHandler(void) {
-// 
+//
 // 	// check if the USART1 receive interrupt flag was set
 // 	if( USART_GetITStatus(USART1, USART_IT_RXNE) ) {
 // 		uint8_t data = USART1->DR;
 // 		// do something with data
 // 	}
 // }
+//
+
+
+void DMA2_Stream7_IRQHandler(void) {
+	//DMA_ClearITPendingBit( DMA2_Stream7, DMA_IT_TC );
+	DMA2->HIFCR = (1 << 27 | 1 << 26);
+
+	USART_DMACmd(USART1, USART_DMAReq_Tx, DISABLE);
+	GPIO_ResetBits(GPIOD, GPIO_Pin_14);
+	DMA_Cmd( DMA2_Stream7, DISABLE );
+	transmitting = 0;
+	if (USART_postTXHook != NULL){
+		USART_postTXHook();
+	}
+}
+
