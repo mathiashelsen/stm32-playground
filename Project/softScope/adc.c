@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 
-void init_AnalogIn(){
+void init_analogIn(){
 	GPIO_InitTypeDef gpio = {0, };
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
 	memset((void*) &gpio, 0, sizeof(GPIO_InitTypeDef));

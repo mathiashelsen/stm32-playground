@@ -48,7 +48,7 @@ int main(void) {
 	init_clock(ADC_PERIOD, SAMPLES);
 	init_ADC(samplesBuffer, SAMPLES);
 	init_USART1(115200);
-	init_AnalogIn();
+	init_analogIn();
 	
 	// screws up web interface:
 	//uint8_t hallo[] = "Hello!";
@@ -56,7 +56,9 @@ int main(void) {
 
 	state = STATE_IDLE;
 
-	TIM_Cmd(TIM2, ENABLE);
+	enable_clock();
+
+
 	while(1) {
 		if( state == STATE_PROCESS ) {
 			GPIO_SetBits(GPIOD, GPIO_Pin_13);

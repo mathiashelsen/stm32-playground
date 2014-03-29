@@ -1,5 +1,6 @@
 #include "stm32f4xx.h"
 
+
 void init_clock(int ADC_PERIOD, int SAMPLES) {
 	// Enable the clock to the timer
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE); // APB1 clock: 168MHz/4 = 42 MHz
@@ -39,3 +40,6 @@ void init_clock(int ADC_PERIOD, int SAMPLES) {
 	NVIC_Init(&NVIC_InitStructure);
 }
 
+void enable_clock(){
+	TIM_Cmd(TIM2, ENABLE);
+}
