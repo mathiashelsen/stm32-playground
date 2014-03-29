@@ -183,12 +183,9 @@ int main(void)
 		usartDMA.DMA_MemoryBurst = DMA_MemoryBurst_Single;
 		usartDMA.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
 
-		DMA_USART1 = DMA2_Stream7;
-	
 		DMA_Init( DMA2_Stream7, &usartDMA );
 		DMA_ClearITPendingBit( DMA2_Stream7, DMA_IT_TC);
 		DMA_ITConfig(DMA2_Stream7, DMA_IT_TC, ENABLE );
-	
 		// Configure interrupts
 		NVIC_InitTypeDef NVIC_InitStructure;
 		NVIC_InitStructure.NVIC_IRQChannel = DMA2_Stream7_IRQn;        // Configure USART1 interrupts
@@ -231,10 +228,21 @@ void TIM3_IRQHandler(void)
 
 void DMA2_Stream7_IRQHandler(void)
 {
-    DMA_ClearITPendingBit( DMA2_Stream7, DMA_IT_TC );
+    //DMA_ClearITPendingBit( DMA2_Stream7, DMA_IT_TC );
+    DMA2->HIFCR = (1 << 27 | 1 << 26);
+    volatile uint32_t tmp = DMA2->HISR;
+
     USART_DMACmd(USART1, USART_DMAReq_Tx, DISABLE);
     GPIO_ResetBits(GPIOD, GPIO_Pin_14);
+    DMA_Cmd( DMA2_Stream7, DISABLE );
     transmitting = 0;
+}
+
+void ADC_IRQHandler(void)
+{
+    ADC_ClearITPendingBit(ADC1 , ADC_IT_OVR);
+    ADC_ClearFlag(ADC1, ADC_FLAG_OVR);
+    DMA_Cmd( DMA2_Stream0, ENABLE );
 }
 
 void init_clock(void)
@@ -330,12 +338,25 @@ void init_ADC(void)
     adc.ADC_DataAlign = ADC_DataAlign_Right;
     adc.ADC_NbrOfConversion = 1;
     ADC_Init( ADC1, &adc );
+    ADC_DMACmd( ADC1, ENABLE ); // Enable generating DMA requests
+    ADC_DMARequestAfterLastTransferCmd(ADC1, ENABLE);
 
     
     // Configure the channel from which to sample
     ADC_RegularChannelConfig( ADC1, ADC_Channel_1, 1, ADC_SampleTime_3Cycles);
 
-    ADC_DMACmd( ADC1, ENABLE ); // Enable generating DMA requests
+
+    // NVIC config
+    NVIC_InitTypeDef NVIC_InitStructure;
+    NVIC_InitStructure.NVIC_IRQChannel = ADC_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+    ADC_ITConfig(ADC1, ADC_IT_OVR, ENABLE);
+    ADC_ClearFlag(ADC1, ADC_FLAG_OVR);
+    ADC_ClearITPendingBit(ADC1 , ADC_IT_OVR);
+
     ADC_Cmd( ADC1, ENABLE );
 
     ADC_SoftwareStartConv(ADC1);

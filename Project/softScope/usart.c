@@ -39,7 +39,7 @@ void init_USART1(uint32_t baudrate) {
 	USART_Init(USART1, &USART_InitStruct);				
 
 	// Enable receive interrupt
-	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
+	//USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
 
 	// Configure interrupts
 	NVIC_InitTypeDef NVIC_InitStructure;
