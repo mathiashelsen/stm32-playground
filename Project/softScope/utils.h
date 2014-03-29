@@ -5,6 +5,6 @@
 
 
 // ACHTUNG: Only works if nBytes is a multiple of 16 bytes!
-void memcpy32(void *dest, void *src, uint32_t nBytes);
+void memcpy16(uint16_t *dest, uint16_t *src, uint32_t nBytes);
 
 #endif

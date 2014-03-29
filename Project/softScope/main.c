@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include "usart.h"
+#include "utils.h"
 
 #define STATE_IDLE	(int32_t) 0
 #define STATE_PROCESS	(int32_t) 1
@@ -37,7 +38,7 @@ int main(void)
 
     samplesBuffer   = malloc(sizeof(uint16_t)*SAMPLES*4);
     memset((void*)samplesBuffer, 0, sizeof(uint16_t)*SAMPLES*4);
-    usartBuffer	    = malloc(sizeof(uint16_t)*(SAMPLES+1));
+    usartBuffer	    = malloc(sizeof(uint16_t)*(SAMPLES+1)); // This should be a multiple of 32bits for easy alignment
     *usartBuffer    = 0xFFFF; // The first halfword will be all ones to signal a frame
 
     triggerFrame = 3;
@@ -151,7 +152,7 @@ int main(void)
 		if(triggerFrame > 0)
 		{
 		    // Data was from frame 0..2 
-		    memcpy32((void *)(usartBuffer+1), (void *)triggerPoint, 1024*2);
+		    memcpy16((void *)(usartBuffer+1), (void *)triggerPoint, 1024*2);
 		}
 		else
 		{

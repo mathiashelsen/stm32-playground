@@ -1,15 +1,13 @@
 #include "utils.h"
 
-void memcpy32(void *dest, void *src, uint32_t nBytes)
+void memcpy16(uint16_t *dest, uint16_t *src, uint32_t nBytes)
 {
-    uint32_t N = nBytes >> 4;
-    uint32_t *d = (uint32_t *) dest;
-    uint32_t *s = (uint32_t *) src;
+    uint32_t N = nBytes >> 3; // Transfer 4 uint16_t's that are 2 bytes wide -> div by 8
     do
     {
-	*d++ = *s++;
-	*d++ = *s++;
-	*d++ = *s++;
-	*d++ = *s++;
+	*dest++ = *src++;
+	*dest++ = *src++;
+	*dest++ = *src++;
+	*dest++ = *src++;
     }while(--N);
 }
