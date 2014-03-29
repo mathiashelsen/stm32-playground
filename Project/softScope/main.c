@@ -58,7 +58,6 @@ int main(void) {
 
 	enable_clock();
 
-
 	while(1) {
 		if( state == STATE_PROCESS ) {
 			GPIO_SetBits(GPIOD, GPIO_Pin_13);
@@ -137,35 +136,8 @@ int main(void) {
 				GPIO_SetBits(GPIOD, GPIO_Pin_14);
 
 				transmitting = 1;
-				// Start transmitting using DMA, interrupt when finished -> transmitting = 0
-				DMA_InitTypeDef usartDMA = {0, };
-				usartDMA.DMA_Channel = DMA_Channel_4; // channel 4, stream 7 = USART1_TX
-				usartDMA.DMA_PeripheralBaseAddr = (uint32_t) &(USART1->DR);
-				usartDMA.DMA_Memory0BaseAddr = (uint32_t) usartBuffer;
-				usartDMA.DMA_DIR = DMA_DIR_MemoryToPeripheral;
-				usartDMA.DMA_BufferSize = SAMPLES + 1;
-				usartDMA.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-				usartDMA.DMA_MemoryInc = DMA_MemoryInc_Enable;
-				usartDMA.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-				usartDMA.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;
-				usartDMA.DMA_Mode = DMA_Mode_Normal;
-				usartDMA.DMA_Priority = DMA_Priority_Low; // This DMA is shared with the ADC, which has priority ofcourse
-				usartDMA.DMA_FIFOMode = DMA_FIFOMode_Disable;
-				usartDMA.DMA_MemoryBurst = DMA_MemoryBurst_Single;
-				usartDMA.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
-
-				DMA_Init( DMA2_Stream7, &usartDMA );
-				DMA_ClearITPendingBit( DMA2_Stream7, DMA_IT_TC);
-				DMA_ITConfig(DMA2_Stream7, DMA_IT_TC, ENABLE );
-				// Configure interrupts
-				NVIC_InitTypeDef NVIC_InitStructure;
-				NVIC_InitStructure.NVIC_IRQChannel = DMA2_Stream7_IRQn;        // Configure USART1 interrupts
-				NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;// Priority group
-				NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;       // Subpriority inside the group
-				NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;          // enable globally
-				NVIC_Init(&NVIC_InitStructure);
-				DMA_Cmd( DMA2_Stream7, ENABLE );
-				USART_DMACmd(USART1, USART_DMAReq_Tx, ENABLE);
+				
+				USART_asyncTX(usartBuffer, SAMPLES);
 			}
 			GPIO_ResetBits(GPIOD, GPIO_Pin_13);
 			state = STATE_IDLE;
@@ -173,20 +145,6 @@ int main(void) {
 			GPIO_SetBits(GPIOD, GPIO_Pin_12);
 
 		}
-	}
-}
-
-void USART1_IRQHandler(void) {
-	USART_ClearITPendingBit(USART1, USART_IT_RXNE);
-}
-
-void TIM3_IRQHandler(void) {
-	TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
-
-	if( state == STATE_PROCESS ) {
-		state = STATE_OVERFLOW;
-	} else {
-		state = STATE_PROCESS;
 	}
 }
 
@@ -204,5 +162,16 @@ void ADC_IRQHandler(void) {
 	ADC_ClearITPendingBit(ADC1 , ADC_IT_OVR);
 	ADC_ClearFlag(ADC1, ADC_FLAG_OVR);
 	DMA_Cmd( DMA2_Stream0, ENABLE );
+}
+
+
+void TIM3_IRQHandler(void) {
+	TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
+
+	if( state == STATE_PROCESS ) {
+		state = STATE_OVERFLOW;
+	} else {
+		state = STATE_PROCESS;
+	}
 }
 

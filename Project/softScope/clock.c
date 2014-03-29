@@ -43,3 +43,4 @@ void init_clock(int ADC_PERIOD, int SAMPLES) {
 void enable_clock(){
 	TIM_Cmd(TIM2, ENABLE);
 }
+
