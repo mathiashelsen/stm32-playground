@@ -140,20 +140,20 @@ int main(void)
 	    */ 
 	    if(triggerPoint && !transmitting)
 	    {
-		// Copy the data
+		// Copy the data, using memcpy for speed reasons
 		if(triggerFrame > 0)
 		{
 		    // Data was from frame 0..2 
-		    memmove((void *)usartBuffer+1, (void *)triggerPoint, 1024*2);
+		    memcpy((void *)usartBuffer+1, (void *)triggerPoint, 1024*2);
 		}
 		else
 		{
 		    // This is the number of samples till we wrap to the first frame
-		    int32_t samples = (samplesBuffer + 4*1024 - 1 - triggerPoint);
+		    int32_t samples = (int32_t)(samplesBuffer + 4*1024 - 1 - triggerPoint);
 		    // A block needs to be copied from the last frame
-		    memmove((void *)usartBuffer+1, (void *)triggerPoint, samples*2);
+		    memcpy((void *)usartBuffer+1, (void *)triggerPoint, samples*2);
 		    // and a part from the first frame
-		    memmove((void *)usartBuffer+1+samples, (void *)samplesBuffer, (1024-samples)*2);
+		    memcpy((void *)usartBuffer+1+samples, (void *)samplesBuffer, (1024-samples)*2);
 		}
 	
 		transmitting = 1;	
