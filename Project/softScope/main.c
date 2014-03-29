@@ -30,6 +30,11 @@ volatile int32_t state;
 #define ADC_PERIOD  419 // 100kSamples
 #define SAMPLES	    1024 // Number of samples for each acquisition/frame
 
+
+void DMA2_Stream7_IRQHook() {
+	transmitting = 0;
+}
+
 int main(void) {
 	//ADCx = ADC1;
 	//USARTx = USART1;
@@ -48,6 +53,7 @@ int main(void) {
 	init_clock(ADC_PERIOD, SAMPLES);
 	init_ADC(samplesBuffer, SAMPLES);
 	init_USART1(115200);
+	USART_postTXHook = DMA2_Stream7_IRQHook; // ...
 	init_analogIn();
 	
 	// screws up web interface:
@@ -148,19 +154,6 @@ int main(void) {
 	}
 }
 
-void DMA2_Stream7_IRQHook() {
-	transmitting = 0;
-}
-
-void DMA2_Stream7_IRQHandler(void) {
-	//DMA_ClearITPendingBit( DMA2_Stream7, DMA_IT_TC );
-	DMA2->HIFCR = (1 << 27 | 1 << 26);
-
-	USART_DMACmd(USART1, USART_DMAReq_Tx, DISABLE);
-	GPIO_ResetBits(GPIOD, GPIO_Pin_14);
-	DMA_Cmd( DMA2_Stream7, DISABLE );
-	DMA2_Stream7_IRQHook();
-}
 
 void TIM3_IRQHook(){
 	if( state == STATE_PROCESS ) {

@@ -8,6 +8,8 @@
 #include <stm32f4xx.h>
 #include <stm32f4xx_usart.h>
 
+#include "usart.h"
+
 void init_USART1(uint32_t baudrate) {
 
 	// Enable APB2 peripheral clock for USART1
@@ -112,5 +114,19 @@ void USART_asyncTX(volatile uint16_t *usartBuffer, int SAMPLES) {
 
 void USART1_IRQHandler(void) {
 	USART_ClearITPendingBit(USART1, USART_IT_RXNE);
+}
+
+function USART_postTXHook;
+
+void DMA2_Stream7_IRQHandler(void) {
+	//DMA_ClearITPendingBit( DMA2_Stream7, DMA_IT_TC );
+	DMA2->HIFCR = (1 << 27 | 1 << 26);
+
+	USART_DMACmd(USART1, USART_DMAReq_Tx, DISABLE);
+	GPIO_ResetBits(GPIOD, GPIO_Pin_14);
+	DMA_Cmd( DMA2_Stream7, DISABLE );
+	if (USART_postTXHook != 0){
+		USART_postTXHook();
+	}
 }
 
