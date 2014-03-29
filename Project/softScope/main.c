@@ -148,6 +148,10 @@ int main(void) {
 	}
 }
 
+void DMA2_Stream7_IRQHook() {
+	transmitting = 0;
+}
+
 void DMA2_Stream7_IRQHandler(void) {
 	//DMA_ClearITPendingBit( DMA2_Stream7, DMA_IT_TC );
 	DMA2->HIFCR = (1 << 27 | 1 << 26);
@@ -155,16 +159,19 @@ void DMA2_Stream7_IRQHandler(void) {
 	USART_DMACmd(USART1, USART_DMAReq_Tx, DISABLE);
 	GPIO_ResetBits(GPIOD, GPIO_Pin_14);
 	DMA_Cmd( DMA2_Stream7, DISABLE );
-	transmitting = 0;
+	DMA2_Stream7_IRQHook();
 }
 
-void TIM3_IRQHandler(void) {
-	TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
-
+void TIM3_IRQHook(){
 	if( state == STATE_PROCESS ) {
 		state = STATE_OVERFLOW;
 	} else {
 		state = STATE_PROCESS;
 	}
+}
+
+void TIM3_IRQHandler(void) {
+	TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
+ 	TIM3_IRQHook();
 }
 
