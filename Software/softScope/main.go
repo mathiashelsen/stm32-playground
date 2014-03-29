@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	BUFSIZE = 512
+	BUFSIZE = 1024
 	MAGIC   = 0xEF9A1387
 )
 
@@ -53,23 +53,23 @@ func StreamInput() {
 		// Skip to the beginning of what is presumably a new frame.
 		// Once we are in sync we should not have to skip anymore,
 		// but in the rare case a bit should fall over, we will re-sync quickly.
-		if serial.readInt() != MAGIC {
-			// Print it so that we notice when things go suspicious.
-			// A few frame syncs after the cable has been touched is OK,
-			// much more is not.
-			log.Println("Frame syncing...")
-		}
-		for serial.readInt() != MAGIC {
-			//skip
-		}
+	//	if serial.readInt() != MAGIC {
+	//		// Print it so that we notice when things go suspicious.
+	//		// A few frame syncs after the cable has been touched is OK,
+	//		// much more is not.
+	//		log.Println("Frame syncing...")
+	//	}
+	//	for serial.readInt() != MAGIC {
+	//		//skip
+	//	}
 
 		dataLock.Lock()
 
 		// TODO (proto) move into state.Read
-		stateBuf.Samples = serial.readInt()
-		stateBuf.TimeBase = serial.readInt()
-		stateBuf.TrigLev = serial.readInt()
-		stateBuf.SoftGain = serial.readInt()
+	//	stateBuf.Samples = serial.readInt()
+	//	stateBuf.TimeBase = serial.readInt()
+	//	stateBuf.TrigLev = serial.readInt()
+	//	stateBuf.SoftGain = serial.readInt()
 		serial.ReadFull(buffer)
 
 		buffer, data = data, buffer
