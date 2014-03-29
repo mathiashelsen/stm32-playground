@@ -20,6 +20,8 @@ volatile uint32_t transmitting;
 volatile uint16_t triggerLevel;
 
 volatile int32_t state;
+volatile ADC_TypeDef* ADCx;
+volatile USART_TypeDef* USARTx;
 
 #define ADC_PERIOD  419 // 100kSamples
 #define SAMPLES	    1024 // Number of samples for each acquisition/frame
@@ -30,8 +32,11 @@ void init_ADC(void);
 int main(void)
 {
     NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 ); 
+    ADCx = ADC1;
+    USARTx = USART1;
 
     samplesBuffer   = malloc(sizeof(uint16_t)*SAMPLES*4);
+    memset((void*)samplesBuffer, 0, sizeof(uint16_t)*SAMPLES*4);
     usartBuffer	    = malloc(sizeof(uint16_t)*(SAMPLES+1));
     *usartBuffer    = 0xFFFF; // The first halfword will be all ones to signal a frame
 
@@ -41,11 +46,13 @@ int main(void)
 
     init_clock();
     init_ADC();
-    init_USART1(480000);
+    init_USART1(115200);
+    uint8_t hallo[] = "Hello!";
+    USART_TX( USART1, hallo, strlen((char *)hallo));
 
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
     GPIO_InitTypeDef gpio = {0, };
-    gpio.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13;
+    gpio.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14;
     gpio.GPIO_Mode = GPIO_Mode_OUT;
     gpio.GPIO_OType = GPIO_OType_PP;
     gpio.GPIO_Speed = GPIO_Speed_25MHz;
@@ -144,23 +151,25 @@ int main(void)
 		if(triggerFrame > 0)
 		{
 		    // Data was from frame 0..2 
-		    memcpy((void *)usartBuffer+1, (void *)triggerPoint, 1024*2);
+		    memcpy((void *)(usartBuffer+1), (void *)triggerPoint, 1024*2);
 		}
 		else
 		{
 		    // This is the number of samples till we wrap to the first frame
 		    int32_t samples = (int32_t)(samplesBuffer + 4*1024 - 1 - triggerPoint);
 		    // A block needs to be copied from the last frame
-		    memcpy((void *)usartBuffer+1, (void *)triggerPoint, samples*2);
+		    memcpy((void *)(usartBuffer+1), (void *)triggerPoint, samples*2);
 		    // and a part from the first frame
-		    memcpy((void *)usartBuffer+1+samples, (void *)samplesBuffer, (1024-samples)*2);
+		    memcpy((void *)(usartBuffer+1+samples), (void *)samplesBuffer, (1024-samples)*2);
 		}
+
+		GPIO_SetBits(GPIOD, GPIO_Pin_14);
 	
 		transmitting = 1;	
 		// Start transmitting using DMA, interrupt when finished -> transmitting = 0
 		DMA_InitTypeDef usartDMA = {0, };
 		usartDMA.DMA_Channel = DMA_Channel_4; // channel 4, stream 7 = USART1_TX	
-		usartDMA.DMA_PeripheralBaseAddr = (uint32_t) USART1->DR;
+		usartDMA.DMA_PeripheralBaseAddr = (uint32_t) &(USART1->DR);
 		usartDMA.DMA_Memory0BaseAddr = (uint32_t) usartBuffer;
 		usartDMA.DMA_DIR = DMA_DIR_MemoryToPeripheral;
 		usartDMA.DMA_BufferSize = SAMPLES + 1;
@@ -173,6 +182,8 @@ int main(void)
 		usartDMA.DMA_FIFOMode = DMA_FIFOMode_Disable;
 		usartDMA.DMA_MemoryBurst = DMA_MemoryBurst_Single;
 		usartDMA.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
+
+		DMA_USART1 = DMA2_Stream7;
 	
 		DMA_Init( DMA2_Stream7, &usartDMA );
 		DMA_ClearITPendingBit( DMA2_Stream7, DMA_IT_TC);
@@ -186,6 +197,7 @@ int main(void)
 		NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;          // enable globally
 		NVIC_Init(&NVIC_InitStructure);
 		DMA_Cmd( DMA2_Stream7, ENABLE );
+		USART_DMACmd(USART1, USART_DMAReq_Tx, ENABLE);
 	    }
 	    GPIO_ResetBits(GPIOD, GPIO_Pin_13);
 	    state = STATE_IDLE;
@@ -206,7 +218,7 @@ void USART1_IRQHandler(void)
 void TIM3_IRQHandler(void)
 {
     TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
-    GPIO_ToggleBits( GPIOD, GPIO_Pin_12 );
+
     if( state == STATE_PROCESS )
     {
 	state = STATE_OVERFLOW;
@@ -220,6 +232,8 @@ void TIM3_IRQHandler(void)
 void DMA2_Stream7_IRQHandler(void)
 {
     DMA_ClearITPendingBit( DMA2_Stream7, DMA_IT_TC );
+    USART_DMACmd(USART1, USART_DMAReq_Tx, DISABLE);
+    GPIO_ResetBits(GPIOD, GPIO_Pin_14);
     transmitting = 0;
 }
 
@@ -266,6 +280,35 @@ void init_clock(void)
 
 void init_ADC(void)
 {
+
+    // Init the DMA for transferring data from the ADC
+    // Enable the clock to the DMA
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2, ENABLE);
+
+    // Configure the DMA stream for ADC -> memory
+    DMA_InitTypeDef DMAInit = {0, };
+    DMAInit.DMA_Channel	    = DMA_Channel_0; // DMA channel 0 stream 0 is mapped to ADC1
+    DMAInit.DMA_PeripheralBaseAddr  = (uint32_t) 0x4001204c;
+    DMAInit.DMA_Memory0BaseAddr	    = (uint32_t) samplesBuffer; // Copy data from the buffer
+    DMAInit.DMA_DIR	    = DMA_DIR_PeripheralToMemory;
+    DMAInit.DMA_BufferSize  = SAMPLES*4;
+    DMAInit.DMA_PeripheralInc	    = DMA_PeripheralInc_Disable; // Do not increase the periph pointer
+    DMAInit.DMA_MemoryInc   = DMA_MemoryInc_Enable; // But do increase the memory pointer
+    DMAInit.DMA_PeripheralDataSize  = DMA_PeripheralDataSize_HalfWord; //16 bits only please
+    DMAInit.DMA_MemoryDataSize	    = DMA_MemoryDataSize_HalfWord;
+    DMAInit.DMA_Mode	    = DMA_Mode_Circular; // Wrap around and keep playing a shanty tune
+    DMAInit.DMA_Priority    = DMA_Priority_VeryHigh;
+    DMAInit.DMA_FIFOMode    = DMA_FIFOMode_Disable; // No FIFO, direct write will be sufficiently fast
+    DMAInit.DMA_MemoryBurst = DMA_MemoryBurst_Single;
+    DMAInit.DMA_PeripheralBurst	    = DMA_PeripheralBurst_Single;
+   
+    // Initialize the DMA
+    DMA_Init( DMA2_Stream0, &DMAInit );
+    DMA_Cmd( DMA2_Stream0 , ENABLE );
+
+    //DMA_ADC1 = DMA2_Stream0;
+
+
     //Enable the clock to the ADC
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
 
@@ -290,36 +333,11 @@ void init_ADC(void)
 
     
     // Configure the channel from which to sample
-    ADC_RegularChannelConfig( ADC1, ADC_Channel_1, 0, ADC_SampleTime_3Cycles);
+    ADC_RegularChannelConfig( ADC1, ADC_Channel_1, 1, ADC_SampleTime_3Cycles);
 
     ADC_DMACmd( ADC1, ENABLE ); // Enable generating DMA requests
     ADC_Cmd( ADC1, ENABLE );
 
-    // Init the DMA for transferring data from the ADC
-    // Enable the clock to the DMA
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2, ENABLE);
-
-    // Configure the DMA stream for ADC -> memory
-    DMA_InitTypeDef DMAInit = {0, };
-    DMAInit.DMA_Channel	    = DMA_Channel_0; // DMA channel 0 stream 0 is mapped to ADC1
-    DMAInit.DMA_PeripheralBaseAddr  = (uint32_t) ADC1->DR;
-    DMAInit.DMA_Memory0BaseAddr	    = (uint32_t) samplesBuffer; // Copy data from the buffer
-    DMAInit.DMA_DIR	    = DMA_DIR_PeripheralToMemory;
-    DMAInit.DMA_BufferSize  = SAMPLES*4;
-    DMAInit.DMA_PeripheralInc	    = DMA_PeripheralInc_Disable; // Do not increase the periph pointer
-    DMAInit.DMA_MemoryInc   = DMA_MemoryInc_Enable; // But do increase the memory pointer
-    DMAInit.DMA_PeripheralDataSize  = DMA_PeripheralDataSize_HalfWord; //16 bits only please
-    DMAInit.DMA_MemoryDataSize	    = DMA_MemoryDataSize_HalfWord;
-    DMAInit.DMA_Mode	    = DMA_Mode_Circular; // Wrap around and keep playing a shanty tune
-    DMAInit.DMA_Priority    = DMA_Priority_VeryHigh;
-    DMAInit.DMA_FIFOMode    = DMA_FIFOMode_Disable; // No FIFO, direct write will be sufficiently fast
-    DMAInit.DMA_MemoryBurst = DMA_MemoryBurst_Single;
-    DMAInit.DMA_PeripheralBurst	    = DMA_PeripheralBurst_Single;
-   
-    // Initialize the DMA
-    
-    DMA_Init( DMA2_Stream0, &DMAInit );
-    DMA_Cmd( DMA2_Stream0 , ENABLE );
-    
+    ADC_SoftwareStartConv(ADC1);
 }
 
