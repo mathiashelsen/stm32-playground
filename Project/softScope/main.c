@@ -20,12 +20,15 @@ volatile uint16_t triggerLevel;
 
 volatile int32_t state;
 
-//volatile ADC_TypeDef* ADCx;     // currently unused
-//volatile USART_TypeDef* USARTx; // currently unused
+//volatile ADC_TypeDef* ADCx;     // currently unused so removed
+//volatile USART_TypeDef* USARTx; // currently unused so removed
 
 #define ADC_PERIOD  419 // 100kSamples
 #define SAMPLES	    1024 // Number of samples for each acquisition/frame
 
+// Called at the end of TIM3_IRQHandler.
+// Separated from the rest of the handler so it can be
+// readily replaced if we change the sate machine.
 void TIM3_IRQHook(){
 	if( state == STATE_PROCESS ) {
 		state = STATE_OVERFLOW;
@@ -35,6 +38,7 @@ void TIM3_IRQHook(){
 }
 
 int main(void) {
+	//unused so removed:
 	//ADCx = ADC1;
 	//USARTx = USART1;
 
@@ -49,13 +53,13 @@ int main(void) {
 	transmitting = 0;
 	triggerLevel = (0xFFF >> 1); // trigger halfway
 
-	init_clock(ADC_PERIOD, SAMPLES);
-	clock_TIM3_IRQHook = TIM3_IRQHook; // add to interrupt handler
+	init_clock(ADC_PERIOD, SAMPLES);     
+	clock_TIM3_IRQHook = TIM3_IRQHook;  // Register TIM3_IRQHook to be called at the end of TIM3_IRQHandler
 	init_ADC(samplesBuffer, SAMPLES);
 	init_USART1(115200);
 	init_analogIn();
 	
-	// screws up web interface:
+	// screws up web interface, so removed:
 	//uint8_t hallo[] = "Hello!";
 	//USART_TX( USART1, hallo, strlen((char *)hallo));
 
@@ -140,8 +144,6 @@ int main(void) {
 
 				GPIO_SetBits(GPIOD, GPIO_Pin_14);
 
-				transmitting = 1;
-				
 				USART_asyncTX(usartBuffer, SAMPLES);
 			}
 			GPIO_ResetBits(GPIOD, GPIO_Pin_13);

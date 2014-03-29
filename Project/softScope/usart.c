@@ -11,7 +11,7 @@
 
 #include "usart.h"
 
-volatile uint32_t transmitting;
+volatile bool transmitting;
 function USART_postTXHook;
 
 void init_USART1(uint32_t baudrate) {
@@ -73,6 +73,8 @@ void USART_TX(USART_TypeDef* USARTx, uint8_t *data, uint16_t N) {
 
 void USART_asyncTX(volatile uint16_t *usartBuffer, int SAMPLES) {
 
+	transmitting = 1;
+				
 	// Start transmitting using DMA, interrupt when finished -> transmitting = 0
 	DMA_InitTypeDef usartDMA = {0, };
 	usartDMA.DMA_Channel = DMA_Channel_4; // channel 4, stream 7 = USART1_TX

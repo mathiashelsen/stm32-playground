@@ -1,6 +1,8 @@
 #ifndef _USART_H_
 #define _USART_H_
 
+#include <stdbool.h>
+
 typedef void (*function)(void);
 
 // Init USART1 with TX on pin PB6, RX on PB7
@@ -11,8 +13,7 @@ void USART_TX(USART_TypeDef* USARTx, uint8_t *data, uint16_t N);
 
 void USART_asyncTX(volatile uint16_t *usartBuffer, int SAMPLES);
 
-// TODO: bool
-volatile uint32_t transmitting;
+volatile bool transmitting;
 
 function USART_postTXHook;
 
