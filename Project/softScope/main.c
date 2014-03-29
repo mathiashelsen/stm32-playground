@@ -11,29 +11,29 @@
 #include "usart.h"
 #include "utils.h"
 
-#define STATE_IDLE	(int32_t) 0
-#define STATE_PROCESS	(int32_t) 1
-#define STATE_OVERFLOW	(int32_t) -1
+#define STATE_IDLE	   ((int32_t)  0)
+#define STATE_PROCESS  ((int32_t)  1)
+#define STATE_OVERFLOW ((int32_t) -1)
 
 volatile uint16_t *samplesBuffer; // The samples buffer is divided into 4 frames
-volatile uint16_t *usartBuffer; // The usart buffer holds a status HW and 1 frame
-volatile uint32_t triggerFrame; // A number between 0..3 that indicates
-// in which frame we need to look for a trigger
+volatile uint16_t *usartBuffer;   // The usart buffer holds a status HW and 1 frame
+volatile uint32_t triggerFrame;   // A number between 0..3 that indicates  in which frame we need to look for a trigger
 volatile uint32_t transmitting;
 volatile uint16_t triggerLevel;
 
 volatile int32_t state;
-volatile ADC_TypeDef* ADCx;
-volatile USART_TypeDef* USARTx;
+
+//volatile ADC_TypeDef* ADCx;     // currently unused
+//volatile USART_TypeDef* USARTx; // currently unused
 
 #define ADC_PERIOD  419 // 100kSamples
 #define SAMPLES	    1024 // Number of samples for each acquisition/frame
 
-
 int main(void) {
+	//ADCx = ADC1;
+	//USARTx = USART1;
+
 	NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 );
-	ADCx = ADC1;
-	USARTx = USART1;
 
 	samplesBuffer   = malloc(sizeof(uint16_t)*SAMPLES*4);
 	memset((void*)samplesBuffer, 0, sizeof(uint16_t)*SAMPLES*4);
@@ -47,8 +47,10 @@ int main(void) {
 	init_clock(ADC_PERIOD, SAMPLES);
 	init_ADC(samplesBuffer, SAMPLES);
 	init_USART1(115200);
-	uint8_t hallo[] = "Hello!";
-	USART_TX( USART1, hallo, strlen((char *)hallo));
+	
+	// screws up web interface:
+	//uint8_t hallo[] = "Hello!";
+	//USART_TX( USART1, hallo, strlen((char *)hallo));
 
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
 	GPIO_InitTypeDef gpio = {0, };
