@@ -19,7 +19,6 @@
 volatile uint16_t *samplesBuffer; // The samples buffer is divided into 4 frames
 volatile uint16_t *usartBuffer;   // The usart buffer holds a status HW and 1 frame
 volatile uint32_t triggerFrame;   // A number between 0..3 that indicates  in which frame we need to look for a trigger
-volatile uint32_t transmitting;
 volatile uint16_t triggerLevel;
 
 volatile int32_t state;
@@ -31,9 +30,6 @@ volatile int32_t state;
 #define SAMPLES	    1024 // Number of samples for each acquisition/frame
 
 
-void DMA2_Stream7_IRQHook() {
-	transmitting = 0;
-}
 
 int main(void) {
 	//ADCx = ADC1;
@@ -53,7 +49,6 @@ int main(void) {
 	init_clock(ADC_PERIOD, SAMPLES);
 	init_ADC(samplesBuffer, SAMPLES);
 	init_USART1(115200);
-	USART_postTXHook = DMA2_Stream7_IRQHook; // ...
 	init_analogIn();
 	
 	// screws up web interface:

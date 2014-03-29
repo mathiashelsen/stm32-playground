@@ -10,6 +10,8 @@
 
 #include "usart.h"
 
+volatile uint32_t transmitting;
+
 void init_USART1(uint32_t baudrate) {
 
 	// Enable APB2 peripheral clock for USART1
@@ -125,6 +127,7 @@ void DMA2_Stream7_IRQHandler(void) {
 	USART_DMACmd(USART1, USART_DMAReq_Tx, DISABLE);
 	GPIO_ResetBits(GPIOD, GPIO_Pin_14);
 	DMA_Cmd( DMA2_Stream7, DISABLE );
+	transmitting = 0;
 	if (USART_postTXHook != 0){
 		USART_postTXHook();
 	}
