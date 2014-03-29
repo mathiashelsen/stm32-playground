@@ -48,18 +48,11 @@ int main(void) {
 	init_clock(ADC_PERIOD, SAMPLES);
 	init_ADC(samplesBuffer, SAMPLES);
 	init_USART1(115200);
+	init_AnalogIn();
 	
 	// screws up web interface:
 	//uint8_t hallo[] = "Hello!";
 	//USART_TX( USART1, hallo, strlen((char *)hallo));
-
-
-	GPIO_InitTypeDef gpio = {0, };
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
-	memset((void*) &gpio, 0, sizeof(GPIO_InitTypeDef));
-	gpio.GPIO_Pin = GPIO_Pin_1;
-	gpio.GPIO_Mode = GPIO_Mode_AN;
-	GPIO_Init(GPIOA, &gpio);
 
 	state = STATE_IDLE;
 

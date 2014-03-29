@@ -1,5 +1,15 @@
 #include "stm32f4xx.h"
 #include <stdint.h>
+#include <string.h>
+
+void init_AnalogIn(){
+	GPIO_InitTypeDef gpio = {0, };
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
+	memset((void*) &gpio, 0, sizeof(GPIO_InitTypeDef));
+	gpio.GPIO_Pin = GPIO_Pin_1;
+	gpio.GPIO_Mode = GPIO_Mode_AN;
+	GPIO_Init(GPIOA, &gpio);
+}
 
 void init_ADC(volatile uint16_t *samplesBuffer, int SAMPLES) {
 
