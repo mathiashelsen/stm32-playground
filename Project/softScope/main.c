@@ -21,7 +21,7 @@ volatile uint16_t triggerLevel;
 volatile int32_t state;
 
 #define ADC_PERIOD  419  // 100kSamples
-#define HEADER	    1    // Number of header halfwords before samples data
+#define HEADER	    16   // Number of header halfwords before samples data
 #define SAMPLES	    1024 // Number of samples for each acquisition/frame
 
 // Called at the end of TIM3_IRQHandler.
@@ -34,7 +34,7 @@ void TIM3_IRQHook(){
 		state = STATE_PROCESS;
 	}
 }
-
+ 
 int main(void) {
 	NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 );
 
