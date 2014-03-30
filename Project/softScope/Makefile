@@ -19,7 +19,7 @@ STM32_INCLUDES = -I../../Libraries/CMSIS/Device/ST/STM32F4xx/Include/ \
 	-I../../Libraries/CMSIS/Include/ \
 	-I../../Libraries/STM32F4xx_StdPeriph_Driver/inc/ -I./
 
-OPTIMIZE       = -O -S
+OPTIMIZE       = -O
 
 CFLAGS	= $(MCFLAGS)  $(OPTIMIZE)  $(DEFS) -I. -I./ $(STM32_INCLUDES)  -Wl,-T,stm32_flash.ld
 AFLAGS	= $(MCFLAGS) 
