@@ -20,10 +20,8 @@ volatile uint16_t triggerLevel;
 
 volatile int32_t state;
 
-//volatile ADC_TypeDef* ADCx;     // currently unused so removed
-//volatile USART_TypeDef* USARTx; // currently unused so removed
-
-#define ADC_PERIOD  419 // 100kSamples
+#define ADC_PERIOD  419  // 100kSamples
+#define HEADER	    16   // Number of header halfwords before samples data
 #define SAMPLES	    1024 // Number of samples for each acquisition/frame
 
 // Called at the end of TIM3_IRQHandler.
@@ -36,17 +34,13 @@ void TIM3_IRQHook(){
 		state = STATE_PROCESS;
 	}
 }
-
+ 
 int main(void) {
-	//unused so removed:
-	//ADCx = ADC1;
-	//USARTx = USART1;
-
 	NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 );
 
 	samplesBuffer   = malloc(sizeof(uint16_t)*SAMPLES*4);
 	memset((void*)samplesBuffer, 0, sizeof(uint16_t)*SAMPLES*4);
-	usartBuffer	    = malloc(sizeof(uint16_t)*(SAMPLES+1)); // This should be a multiple of 32bits for easy alignment
+	usartBuffer	    = malloc(sizeof(uint16_t)*(SAMPLES+HEADER)); // This should be a multiple of 32bits for easy alignment
 	*usartBuffer    = 0xFFFF; // The first halfword will be all ones to signal a frame
 
 	triggerFrame = 3;
@@ -59,10 +53,6 @@ int main(void) {
 	init_USART1(115200);
 	init_analogIn();
 	
-	// screws up web interface, so removed:
-	//uint8_t hallo[] = "Hello!";
-	//USART_TX( USART1, hallo, strlen((char *)hallo));
-
 	state = STATE_IDLE;
 
 	enable_clock();
@@ -132,19 +122,19 @@ int main(void) {
 				// Copy the data, using memcpy for speed reasons
 				if(triggerFrame > 0) {
 					// Data was from frame 0..2
-					memcpy16((uint16_t*)(usartBuffer+1), (uint16_t*)triggerPoint, 1024*2);
+					memcpy16((uint16_t*)(usartBuffer+HEADER), (uint16_t*)triggerPoint, 1024*2);
 				} else {
 					// This is the number of samples till we wrap to the first frame
 					int32_t samples = (int32_t)(samplesBuffer + 4*1024 - 1 - triggerPoint);
 					// A block needs to be copied from the last frame
-					memcpy16((uint16_t*)(usartBuffer+1), (uint16_t*)triggerPoint, samples*2);
+					memcpy16((uint16_t*)(usartBuffer+HEADER), (uint16_t*)triggerPoint, samples*2);
 					// and a part from the first frame
-					memcpy16((uint16_t*)(usartBuffer+1+samples), (uint16_t*)samplesBuffer, (1024-samples)*2);
+					memcpy16((uint16_t*)(usartBuffer+HEADER+samples), (uint16_t*)samplesBuffer, (1024-samples)*2);
 				}
 
 				GPIO_SetBits(GPIOD, GPIO_Pin_14);
 
-				USART_asyncTX(usartBuffer, SAMPLES);
+				USART_asyncTX(usartBuffer, SAMPLES + HEADER);
 			}
 			GPIO_ResetBits(GPIOD, GPIO_Pin_13);
 			state = STATE_IDLE;
