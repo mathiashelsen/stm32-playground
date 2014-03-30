@@ -71,26 +71,26 @@ void USART_TX(USART_TypeDef* USARTx, uint8_t *data, uint16_t N) {
 
 
 
-void USART_asyncTX(volatile uint16_t *usartBuffer, int SAMPLES) {
+void USART_asyncTX(volatile uint16_t *usartBuffer, int samples) {
 
 	transmitting = 1;
 				
 	// Start transmitting using DMA, interrupt when finished -> transmitting = 0
 	DMA_InitTypeDef usartDMA = {0, };
-	usartDMA.DMA_Channel = DMA_Channel_4; // channel 4, stream 7 = USART1_TX
+	usartDMA.DMA_Channel            = DMA_Channel_4; // channel 4, stream 7 = USART1_TX
 	usartDMA.DMA_PeripheralBaseAddr = (uint32_t) &(USART1->DR);
-	usartDMA.DMA_Memory0BaseAddr = (uint32_t) usartBuffer;
-	usartDMA.DMA_DIR = DMA_DIR_MemoryToPeripheral;
-	usartDMA.DMA_BufferSize = SAMPLES + 1;
-	usartDMA.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-	usartDMA.DMA_MemoryInc = DMA_MemoryInc_Enable;
+	usartDMA.DMA_Memory0BaseAddr    = (uint32_t) usartBuffer;
+	usartDMA.DMA_DIR                = DMA_DIR_MemoryToPeripheral;
+	usartDMA.DMA_BufferSize         = samples;
+	usartDMA.DMA_PeripheralInc      = DMA_PeripheralInc_Disable;
+	usartDMA.DMA_MemoryInc          = DMA_MemoryInc_Enable;
 	usartDMA.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-	usartDMA.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;
-	usartDMA.DMA_Mode = DMA_Mode_Normal;
-	usartDMA.DMA_Priority = DMA_Priority_Low; // This DMA is shared with the ADC, which has priority ofcourse
-	usartDMA.DMA_FIFOMode = DMA_FIFOMode_Disable;
-	usartDMA.DMA_MemoryBurst = DMA_MemoryBurst_Single;
-	usartDMA.DMA_PeripheralBurst = DMA_PeripheralBurst_Single;
+	usartDMA.DMA_MemoryDataSize     = DMA_MemoryDataSize_HalfWord;
+	usartDMA.DMA_Mode               = DMA_Mode_Normal;
+	usartDMA.DMA_Priority           = DMA_Priority_Low;       // This DMA is shared with the ADC, which has priority ofcourse
+	usartDMA.DMA_FIFOMode           = DMA_FIFOMode_Disable;
+	usartDMA.DMA_MemoryBurst        = DMA_MemoryBurst_Single;
+	usartDMA.DMA_PeripheralBurst    = DMA_PeripheralBurst_Single;
 
 	DMA_Init( DMA2_Stream7, &usartDMA );
 	DMA_ClearITPendingBit( DMA2_Stream7, DMA_IT_TC);
