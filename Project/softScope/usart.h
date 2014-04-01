@@ -3,6 +3,11 @@
 
 #include <stdbool.h>
 
+
+#define HEADER_HALFWORDS   16                    // Number of header halfwords before samples data
+#define HEADER_WORDS       (HEADER_HALFWORDS/2)
+#define HEADER_BYTES       (HEADER_HALFWORDS*2)
+
 typedef void (*function)(void);
 
 // Init USART1 with TX on pin PB6, RX on PB7

@@ -45,7 +45,7 @@ void init_USART1(uint32_t baudrate) {
 	USART_Init(USART1, &USART_InitStruct);
 
 	// Enable receive interrupt
-	//USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
+	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
 
 	// Configure interrupts
 	NVIC_InitTypeDef NVIC_InitStructure;
@@ -112,22 +112,30 @@ void USART_asyncTX(volatile uint16_t *usartBuffer, int samples) {
 
 
 
-void USART1_IRQHandler(void) {
-	USART_ClearITPendingBit(USART1, USART_IT_RXNE);
+static header_t headerBuf;
+static uint8_t* headerArray = (uint8_t*)(&headerBuf);
+static int arrayPos = 0;
+
+void USART1_IRQHandler() {
+ 	// check if the USART1 receive interrupt flag was set
+ 	if( USART_GetITStatus(USART1, USART_IT_RXNE) ) {
+ 		headerArray[arrayPos] = USART1->DR;
+		arrayPos++;
+		if (arrayPos >= HEADER_BYTES){
+			arrayPos = 0;
+		}
+ 		
+		USART_ClearITPendingBit(USART1, USART_IT_RXNE); // clear receive register not empty bit
+ 	}
+
 }
 
-// void USART1_IRQHandler(void) {
-//
-// 	// check if the USART1 receive interrupt flag was set
-// 	if( USART_GetITStatus(USART1, USART_IT_RXNE) ) {
-// 		uint8_t data = USART1->DR;
-// 		// do something with data
-// 	}
-// }
-//
 
 
-void DMA2_Stream7_IRQHandler(void) {
+
+
+
+void DMA2_Stream7_IRQHandler() {
 	//DMA_ClearITPendingBit( DMA2_Stream7, DMA_IT_TC );
 	DMA2->HIFCR = (1 << 27 | 1 << 26);
 
