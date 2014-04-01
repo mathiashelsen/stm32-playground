@@ -117,8 +117,10 @@ static volatile header_t headerBuf;
 static uint8_t* headerArray = (uint8_t*)(&headerBuf);
 static volatile int arrayPos = 0;
 
-void USART1_RXHandler(uint8_t data){
 
+
+
+void myRXHandler(uint8_t data){
 		LEDOn(LED1);
  		headerArray[arrayPos] = data;
 		arrayPos++;
@@ -128,6 +130,8 @@ void USART1_RXHandler(uint8_t data){
 		}
 		LEDOff(LED1);
 }
+
+byteHandler USART1_RXHandler = myRXHandler;
 
 void USART1_IRQHandler() {
  	// check if the USART1 receive interrupt flag was set
