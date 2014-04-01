@@ -23,6 +23,18 @@ volatile int32_t state;
 #define ADC_PERIOD  419  // 100kSamples
 #define SAMPLES	    1024// Number of samples for each acquisition/frame
 
+#define HEADER_HALFWORDS   16                    // Number of header halfwords before samples data
+#define HEADER_WORDS       (HEADER_HALFWORDS/2)
+#define HEADER_BYTES       (HEADER_HALFWORDS*2)
+
+// Frame data header
+typedef struct{
+	uint32_t magic;    // identifies start of header, 0xFFFFFFFF
+	uint32_t samples;  // number of samples
+} header_t;
+
+header_t incomingHeader; // incoming message
+
 // Called at the end of TIM3_IRQHandler.
 // Separated from the rest of the handler so it can be
 // readily replaced if we change the sate machine.

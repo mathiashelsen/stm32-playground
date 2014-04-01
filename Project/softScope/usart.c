@@ -111,39 +111,17 @@ void USART_asyncTX(volatile uint16_t *usartBuffer, int samples) {
 	USART_DMACmd(USART1, USART_DMAReq_Tx, ENABLE);
 }
 
-
-
-static volatile header_t headerBuf;
-static uint8_t* headerArray = (uint8_t*)(&headerBuf);
-static volatile int arrayPos = 0;
-
-
-
-
-void myRXHandler(uint8_t data){
-		LEDOn(LED1);
- 		headerArray[arrayPos] = data;
-		arrayPos++;
-		if (arrayPos >= HEADER_BYTES){
-			arrayPos = 0;
-			incomingHeader = headerBuf; // header complete, copy to visible header
-		}
-		LEDOff(LED1);
-}
-
-byteHandler USART1_RXHandler = myRXHandler;
+byteHandler USART1_RXHandler; 
 
 void USART1_IRQHandler() {
  	// check if the USART1 receive interrupt flag was set
  	if( USART_GetITStatus(USART1, USART_IT_RXNE) ) {
-		USART1_RXHandler(USART1->DR);
+		if (USART1_RXHandler != NULL){
+			USART1_RXHandler(USART1->DR);
+		}
 		USART_ClearITPendingBit(USART1, USART_IT_RXNE); // clear receive register not empty bit
  	}
 }
-
-
-
-
 
 
 void DMA2_Stream7_IRQHandler() {

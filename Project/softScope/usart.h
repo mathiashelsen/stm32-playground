@@ -4,9 +4,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define HEADER_HALFWORDS   16                    // Number of header halfwords before samples data
-#define HEADER_WORDS       (HEADER_HALFWORDS/2)
-#define HEADER_BYTES       (HEADER_HALFWORDS*2)
 
 typedef void (*function)(void);
 typedef void (*byteHandler)(uint8_t);
@@ -25,14 +22,7 @@ volatile bool transmitting;
 
 // Called after USART_asyncTX.
 function USART_postTXHook;
+byteHandler USART1_RXHandler; 
 
-// Frame data header
-typedef struct{
-	uint32_t magic;    // identifies start of header, 0xFFFFFFFF
-	uint32_t samples;  // number of samples
-} header_t;
-
-
-header_t incomingHeader; // incoming message
 
 #endif
