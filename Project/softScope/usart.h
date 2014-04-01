@@ -4,10 +4,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-
-typedef void (*function)(void);
-typedef void (*byteHandler)(uint8_t);
-
 // Init USART1 with TX on pin PB6, RX on PB7
 void init_USART1(uint32_t baudrate);
 
@@ -20,9 +16,16 @@ void USART_asyncTX(volatile uint16_t *usartBuffer, int SAMPLES);
 // Whether USART_asyncTX is transmitting
 volatile bool transmitting;
 
+
+typedef void (*function)(void);
+
 // Called after USART_asyncTX.
 function USART_postTXHook;
-byteHandler USART1_RXHandler; 
 
+
+typedef void (*byteHandler)(uint8_t);
+
+// Called to handle bytes received on USART1.
+byteHandler USART1_RXHandler; 
 
 #endif
