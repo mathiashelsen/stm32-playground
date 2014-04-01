@@ -10,6 +10,7 @@
 #include <stm32f4xx_usart.h>
 
 #include "usart.h"
+#include "leds.h"
 
 volatile bool transmitting;
 function USART_postTXHook;
@@ -116,16 +117,18 @@ static header_t headerBuf;
 static uint8_t* headerArray = (uint8_t*)(&headerBuf);
 static int arrayPos = 0;
 
+
 void USART1_IRQHandler() {
  	// check if the USART1 receive interrupt flag was set
  	if( USART_GetITStatus(USART1, USART_IT_RXNE) ) {
+		LEDOn(LED1);
  		headerArray[arrayPos] = USART1->DR;
 		arrayPos++;
 		if (arrayPos >= HEADER_BYTES){
 			arrayPos = 0;
 		}
- 		
 		USART_ClearITPendingBit(USART1, USART_IT_RXNE); // clear receive register not empty bit
+		LEDOff(LED1);
  	}
 
 }

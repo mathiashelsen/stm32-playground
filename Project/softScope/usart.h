@@ -31,4 +31,7 @@ typedef struct{
 	uint32_t samples;  // number of samples
 } header_t;
 
+
+header_t incomingHeader; // incoming message
+
 #endif

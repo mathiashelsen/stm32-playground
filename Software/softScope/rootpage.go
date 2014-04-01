@@ -23,7 +23,9 @@ func eventHandler(w http.ResponseWriter, r *http.Request) {
 
 		m := make(map[string]interface{})
 		check(json.NewDecoder(r.Body).Decode(&m))
-		state := NewState(m)
+		fmt.Println("PUT:", m)
+		state := Header{Samples: atoi(m["Samples"])}
+		fmt.Println("WriteToTTY:", state)
 		state.WriteTo(serial)
 	}
 }

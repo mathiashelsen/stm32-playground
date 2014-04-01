@@ -52,10 +52,13 @@ int main(void) {
 	init_ADC(samplesBuffer, SAMPLES);
 	init_USART1(115200);
 	init_analogIn();
+	init_LEDs();
 	
 	state = STATE_IDLE;
 
 	enable_clock();
+
+	LEDOn(LED1);
 
 	while(1) {
 		if( state == STATE_PROCESS ) {
@@ -135,7 +138,7 @@ int main(void) {
 				GPIO_SetBits(GPIOD, GPIO_Pin_14);
 
 				header->magic = 0xFFFFFFFF;
-				header->samples = SAMPLES;
+				header->samples = incomingHeader.samples; // test transmission, todo change
 				USART_asyncTX(usartBuffer, SAMPLES + HEADER_HALFWORDS);
 			}
 			GPIO_ResetBits(GPIOD, GPIO_Pin_13);
