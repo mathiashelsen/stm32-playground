@@ -11,7 +11,6 @@ import (
 
 const (
 	BUFSIZE = 1024
-	HEADERSIZE = 16
 )
 
 var (
@@ -65,8 +64,8 @@ func StreamInput() {
 		//	stateBuf.TrigLev = serial.readInt()
 		//	stateBuf.SoftGain = serial.readInt()
 
-		header := make([]byte, 2 * HEADERSIZE)
-		serial.ReadFull(header)
+		header := Header{}
+		serial.ReadFull((*(*[1<<31 - 1]byte)(unsafe.Pointer(&header)))[:4*HEADER_WORDS])
 		fmt.Println("Frame starts with", header)
 		bytes := (*(*[1<<31 - 1]byte)(unsafe.Pointer(&buffer[0])))[:2*len(buffer)]
 		serial.ReadFull(bytes)
