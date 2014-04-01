@@ -23,6 +23,38 @@ volatile int32_t state;
 #define ADC_PERIOD  419  // 100kSamples
 #define SAMPLES	    1024// Number of samples for each acquisition/frame
 
+// -- protocol
+#define HEADER_HALFWORDS   16                    // Number of header halfwords before samples data
+#define HEADER_WORDS       (HEADER_HALFWORDS/2)
+#define HEADER_BYTES       (HEADER_HALFWORDS*2)
+
+// Frame data header
+typedef struct{
+	uint32_t magic;    // identifies start of header, 0xFFFFFFFF
+	uint32_t samples;  // number of samples
+} header_t;
+
+
+// -- incoming communication
+
+static volatile header_t incomingHeader;     // last header sent from software, values can be used
+static volatile header_t headerBuf;          // receive buffer for incoming usart communication, not to be used
+static uint8_t* headerArray = (uint8_t*)(&headerBuf);
+static volatile int arrayPos = 0;            // position where next received byte should go in headerArray
+
+// called upon usart RX to handle incoming byte
+void myRXHandler(uint8_t data){
+		LEDOn(LED1);
+ 		headerArray[arrayPos] = data;
+		arrayPos++;
+		if (arrayPos >= HEADER_BYTES){
+			arrayPos = 0;
+			incomingHeader = headerBuf; // header complete, copy to visible header
+		}
+		LEDOff(LED1);
+}
+
+
 // Called at the end of TIM3_IRQHandler.
 // Separated from the rest of the handler so it can be
 // readily replaced if we change the sate machine.
@@ -51,6 +83,7 @@ int main(void) {
 	clock_TIM3_IRQHook = TIM3_IRQHook;  // Register TIM3_IRQHook to be called at the end of TIM3_IRQHandler
 	init_ADC(samplesBuffer, SAMPLES);
 	init_USART1(115200);
+	USART1_RXHandler = myRXHandler;
 	init_analogIn();
 	init_LEDs();
 	
