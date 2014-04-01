@@ -113,9 +113,9 @@ void USART_asyncTX(volatile uint16_t *usartBuffer, int samples) {
 
 
 
-static header_t headerBuf;
+static volatile header_t headerBuf;
 static uint8_t* headerArray = (uint8_t*)(&headerBuf);
-static int arrayPos = 0;
+static volatile int arrayPos = 0;
 
 
 void USART1_IRQHandler() {
@@ -126,6 +126,7 @@ void USART1_IRQHandler() {
 		arrayPos++;
 		if (arrayPos >= HEADER_BYTES){
 			arrayPos = 0;
+			incomingHeader = headerBuf; // header complete, copy to visible header
 		}
 		USART_ClearITPendingBit(USART1, USART_IT_RXNE); // clear receive register not empty bit
 		LEDOff(LED1);
