@@ -5,6 +5,6 @@
 void init_analogIn();
 
 // Initialize the ADC to write to samplesBuffer with size SAMPLES
-void init_ADC(volatile uint16_t *samplesBuffer, int SAMPLES);
+void init_ADC(volatile uint16_t *samplesBuffer, int samples);
 
 #endif

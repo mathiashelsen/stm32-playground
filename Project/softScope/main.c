@@ -22,7 +22,7 @@ volatile int32_t state;
 
 #define ADC_PERIOD  419  // 100kSamples
 #define HEADER	    16   // Number of header halfwords before samples data
-#define SAMPLES	    1024 // Number of samples for each acquisition/frame
+#define SAMPLES	    1024// Number of samples for each acquisition/frame
 
 // Called at the end of TIM3_IRQHandler.
 // Separated from the rest of the handler so it can be
@@ -41,6 +41,7 @@ int main(void) {
 	samplesBuffer   = malloc(sizeof(uint16_t)*SAMPLES*4);
 	memset((void*)samplesBuffer, 0, sizeof(uint16_t)*SAMPLES*4);
 	usartBuffer	    = malloc(sizeof(uint16_t)*(SAMPLES+HEADER)); // This should be a multiple of 32bits for easy alignment
+	memset((void*)usartBuffer, 0, sizeof(uint16_t)*(SAMPLES+HEADER));
 	*usartBuffer    = 0xFFFF; // The first halfword will be all ones to signal a frame
 
 	triggerFrame = 3;
@@ -122,14 +123,14 @@ int main(void) {
 				// Copy the data, using memcpy for speed reasons
 				if(triggerFrame > 0) {
 					// Data was from frame 0..2
-					memcpy16((uint16_t*)(usartBuffer+HEADER), (uint16_t*)triggerPoint, SAMPLES*2);
+					memcpy((void*)(usartBuffer+HEADER), (void*)triggerPoint, SAMPLES*2);
 				} else {
 					// This is the number of samples till we wrap to the first frame
-					int32_t samples = (int32_t)(samplesBuffer + 4*1024 - 1 - triggerPoint);
+					int32_t samples = (int32_t)(samplesBuffer + 4*SAMPLES - 1 - triggerPoint);
 					// A block needs to be copied from the last frame
-					memcpy16((uint16_t*)(usartBuffer+HEADER), (uint16_t*)triggerPoint, samples*2);
+					memcpy((void*)(usartBuffer+HEADER), (void*)triggerPoint, samples*2);
 					// and a part from the first frame
-					memcpy16((uint16_t*)(usartBuffer+HEADER+samples), (uint16_t*)samplesBuffer, (SAMPLES-samples)*2);
+					memcpy((void*)(usartBuffer+HEADER+samples), (void*)samplesBuffer, (SAMPLES-samples)*2);
 				}
 
 				GPIO_SetBits(GPIOD, GPIO_Pin_14);

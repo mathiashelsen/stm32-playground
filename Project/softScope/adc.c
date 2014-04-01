@@ -13,7 +13,7 @@ void init_analogIn(){
 	GPIO_Init(GPIOA, &gpio);
 }
 
-void init_ADC(volatile uint16_t *samplesBuffer, int SAMPLES) {
+void init_ADC(volatile uint16_t *samplesBuffer, int samples) {
 
 	// Init the DMA for transferring data from the ADC
 	// Enable the clock to the DMA
@@ -25,7 +25,7 @@ void init_ADC(volatile uint16_t *samplesBuffer, int SAMPLES) {
 	DMAInit.DMA_PeripheralBaseAddr = (uint32_t) 0x4001204c;
 	DMAInit.DMA_Memory0BaseAddr	   = (uint32_t) samplesBuffer;        // Copy data from the buffer
 	DMAInit.DMA_DIR	               = DMA_DIR_PeripheralToMemory;
-	DMAInit.DMA_BufferSize         = SAMPLES*4;
+	DMAInit.DMA_BufferSize         = samples*4;
 	DMAInit.DMA_PeripheralInc      = DMA_PeripheralInc_Disable;       // Do not increase the periph pointer
 	DMAInit.DMA_MemoryInc          = DMA_MemoryInc_Enable;            // But do increase the memory pointer
 	DMAInit.DMA_PeripheralDataSize = DMA_PeripheralDataSize_HalfWord; //16 bits only please

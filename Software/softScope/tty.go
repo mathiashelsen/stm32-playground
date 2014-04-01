@@ -28,6 +28,7 @@ func (t tty) Read(p []byte) (n int, err error) {
 	} else {
 		return n, nil
 	}
+	return n, nil
 }
 
 func (t tty) Write(p []byte) (n int, err error) {
@@ -37,6 +38,7 @@ func (t tty) Write(p []byte) (n int, err error) {
 	} else {
 		return n, nil
 	}
+	return n, nil
 }
 
 func (t tty) ReadFull(p []byte) {

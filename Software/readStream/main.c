@@ -10,6 +10,6 @@ int main(void)
     myReadfull( fd, bytes, 1024*2*2);
     for(int i = 0 ; i < 1024*2; i+=2 )
     {
-	printf("0x%x\t0x%x\n", bytes[i], bytes[i+1]);	
+	printf("%d\t0x%x\t0x%x\n", i, bytes[i], bytes[i+1]);	
     }
 }
