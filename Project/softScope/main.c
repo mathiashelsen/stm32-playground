@@ -42,7 +42,7 @@ int main(void) {
 	memset((void*)samplesBuffer, 0, sizeof(uint16_t)*SAMPLES*4);
 	usartBuffer	    = malloc(sizeof(uint16_t)*(SAMPLES+HEADER)); // This should be a multiple of 32bits for easy alignment
 	memset((void*)usartBuffer, 0, sizeof(uint16_t)*(SAMPLES+HEADER));
-	*usartBuffer    = 0xFFFF; // The first halfword will be all ones to signal a frame
+	header_t* header = (header_t*)(usartBuffer); // header is embedded in beginning of usart buffer
 
 	triggerFrame = 3;
 	transmitting = 0;
@@ -135,6 +135,8 @@ int main(void) {
 
 				GPIO_SetBits(GPIOD, GPIO_Pin_14);
 
+				header->magic = 0xFFFFFFFF;
+				header->samples = SAMPLES;
 				USART_asyncTX(usartBuffer, SAMPLES + HEADER);
 			}
 			GPIO_ResetBits(GPIOD, GPIO_Pin_13);

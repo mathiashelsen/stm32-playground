@@ -20,4 +20,10 @@ volatile bool transmitting;
 // Called after USART_asyncTX.
 function USART_postTXHook;
 
+// Frame data header
+typedef struct{
+	uint32_t magic;    // identifies start of header, 0xFFFFFFFF
+	uint32_t samples;  // number of samples
+} header_t;
+
 #endif
