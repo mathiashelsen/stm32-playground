@@ -67,7 +67,7 @@ int main(void) {
 			* pointer wrapping into the start of the circular ADC buffer.
 			*/
 			uint16_t *triggerPoint = NULL;
-			uint16_t *sptr = (uint16_t *) (samplesBuffer + 1024*triggerFrame);
+			uint16_t *sptr = (uint16_t *) (samplesBuffer + SAMPLES*triggerFrame);
 			uint16_t x0, x1, x2, x3, x4;
 			uint32_t N = (SAMPLES>>2)-2;
 
@@ -122,14 +122,14 @@ int main(void) {
 				// Copy the data, using memcpy for speed reasons
 				if(triggerFrame > 0) {
 					// Data was from frame 0..2
-					memcpy16((uint16_t*)(usartBuffer+HEADER), (uint16_t*)triggerPoint, 1024*2);
+					memcpy16((uint16_t*)(usartBuffer+HEADER), (uint16_t*)triggerPoint, SAMPLES*2);
 				} else {
 					// This is the number of samples till we wrap to the first frame
 					int32_t samples = (int32_t)(samplesBuffer + 4*1024 - 1 - triggerPoint);
 					// A block needs to be copied from the last frame
 					memcpy16((uint16_t*)(usartBuffer+HEADER), (uint16_t*)triggerPoint, samples*2);
 					// and a part from the first frame
-					memcpy16((uint16_t*)(usartBuffer+HEADER+samples), (uint16_t*)samplesBuffer, (1024-samples)*2);
+					memcpy16((uint16_t*)(usartBuffer+HEADER+samples), (uint16_t*)samplesBuffer, (SAMPLES-samples)*2);
 				}
 
 				GPIO_SetBits(GPIOD, GPIO_Pin_14);
