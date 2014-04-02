@@ -9,45 +9,49 @@
 #include "usart.h"
 #include "utils.h"
 
+// -- sampling
 #define STATE_IDLE	   ((int32_t)  0)
 #define STATE_PROCESS  ((int32_t)  1)
 #define STATE_OVERFLOW ((int32_t) -1)
 
-volatile uint16_t *samplesBuffer; // The samples buffer is divided into 4 frames
-volatile uint16_t *usartBuffer;   // The usart buffer holds a status HW and 1 frame
-volatile uint32_t triggerFrame;   // A number between 0..3 that indicates  in which frame we need to look for a trigger
-volatile uint16_t triggerLevel;
-
-volatile int32_t state;
-
 #define ADC_PERIOD  419  // 100kSamples
 #define SAMPLES	    1024// Number of samples for each acquisition/frame
 
-// -- protocol
-#define HEADER_HALFWORDS   16                    // Number of header halfwords before samples data
-#define HEADER_WORDS       (HEADER_HALFWORDS/2)
-#define HEADER_BYTES       (HEADER_HALFWORDS*2)
+volatile uint16_t *samplesBuffer; // The samples buffer is divided into 4 frames
+volatile uint32_t triggerFrame;   // A number between 0..3 that indicates  in which frame we need to look for a trigger
+volatile uint16_t triggerLevel;
+volatile int32_t state;
+
+
+// -- I/O protocol
+#define HEADER_WORDS  8
 
 // Frame data header
 typedef struct{
-	uint32_t magic;    // identifies start of header, 0xFFFFFFFF
-	uint32_t samples;  // number of samples
+	uint32_t magic;                   // identifies start of header, 0xFFFFFFFF
+	uint32_t samples;                 // number of samples
+	uint32_t padding[HEADER_WORDS-2]; // unused space, needed for correct total size
 } header_t;
 
+// -- outbound communication
+static uint8_t *usartBuf;   // embeds outbox and outdata so they can be TX'ed in one go
+static header_t *outbox;    // header written to software, first part of usartBuf
+static uint16_t *outData;   // data written to software, second part of usartBuf
 
-// -- incoming communication
 
+// -- inbound communication
 static volatile header_t inbox;   // last header sent from software, values can be used
 static volatile header_t _inbuf;  // receive buffer for incoming usart communication, not to be used
 static volatile int _inpos = 0;   // position where next received byte should go in headerArray
 
 // called upon usart RX to handle incoming byte
+// writes to _inbuf until full, then copies to inbox
 void myRXHandler(uint8_t data){
 		LEDOn(LED1);
 		uint8_t* arr = (uint8_t*)(&_inbuf);
  		arr[_inpos] = data;
 		_inpos++;
-		if (_inpos >= HEADER_BYTES){
+		if (_inpos >= sizeof(header_t)){
 			_inpos = 0;
 			inbox = _inbuf; // header complete, copy to visible header
 		}
@@ -67,11 +71,20 @@ void TIM3_IRQHook(){
 int main(void) {
 	NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 );
 
+	// ADC
 	samplesBuffer   = malloc(sizeof(uint16_t)*SAMPLES*4);
 	memset((void*)samplesBuffer, 0, sizeof(uint16_t)*SAMPLES*4);
-	usartBuffer	    = malloc(sizeof(uint16_t)*(SAMPLES+HEADER_HALFWORDS)); // This should be a multiple of 32bits for easy alignment
-	memset((void*)usartBuffer, 0, sizeof(uint16_t)*(SAMPLES+HEADER_HALFWORDS));
-	header_t* header = (header_t*)(usartBuffer); // header is embedded in beginning of usart buffer
+
+	// outbound communication
+	int headerBytes = sizeof(header_t);
+	int dataBytes = SAMPLES*sizeof(outData[0]);
+	usartBuf	    = malloc(headerBytes + dataBytes); 
+	memset(usartBuf, 0, headerBytes + dataBytes);
+
+	outbox = (header_t*)(usartBuf);                      // header is embedded in beginning of usart buffer
+	outData = (uint16_t*)(&usartBuf[headerBytes]);       // data is embedded next
+
+	// triggering
 
 	triggerFrame = 3;
 	transmitting = 0;
@@ -156,21 +169,21 @@ int main(void) {
 				// Copy the data, using memcpy for speed reasons
 				if(triggerFrame > 0) {
 					// Data was from frame 0..2
-					memcpy((void*)(usartBuffer+HEADER_HALFWORDS), (void*)triggerPoint, SAMPLES*2);
+					memcpy((void*)(outData), (void*)triggerPoint, SAMPLES*2);
 				} else {
 					// This is the number of samples till we wrap to the first frame
 					int32_t samples = (int32_t)(samplesBuffer + 4*SAMPLES - 1 - triggerPoint);
 					// A block needs to be copied from the last frame
-					memcpy((void*)(usartBuffer+HEADER_HALFWORDS), (void*)triggerPoint, samples*2);
+					memcpy((void*)(outData), (void*)triggerPoint, samples*2);
 					// and a part from the first frame
-					memcpy((void*)(usartBuffer+HEADER_HALFWORDS+samples), (void*)samplesBuffer, (SAMPLES-samples)*2);
+					memcpy((void*)(outData+samples), (void*)samplesBuffer, (SAMPLES-samples)*2);
 				}
 
 				GPIO_SetBits(GPIOD, GPIO_Pin_14);
 
-				header->magic = 0xFFFFFFFF;
-				header->samples = inbox.samples; // test transmission, todo change
-				USART_asyncTX((uint8_t*)(usartBuffer), (SAMPLES + HEADER_HALFWORDS)*sizeof(uint16_t));
+				outbox->magic = 0xFFFFFFFF;
+				outbox->samples = inbox.samples; // test transmission, todo change
+				USART_asyncTX(usartBuf, headerBytes + dataBytes);
 			}
 			GPIO_ResetBits(GPIOD, GPIO_Pin_13);
 			state = STATE_IDLE;
