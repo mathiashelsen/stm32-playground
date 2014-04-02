@@ -55,6 +55,16 @@ void myRXHandler(uint8_t data){
 		if (_inpos >= sizeof(header_t)){
 			_inpos = 0;
 			inbox = _inbuf; // header complete, copy to visible header
+
+			// this seems like a good point to read any incoming messages
+			// TODO(a): only one trigLev variable
+			triggerLevel = inbox.trigLev;
+			if(triggerLevel > 4094){
+				triggerLevel = 4096;
+			}
+			if(triggerLevel < 1000){
+				triggerLevel = 1000; // TODO(a): change, only for frame sync
+			}
 		}
 		LEDOff(LED1);
 }
@@ -68,14 +78,6 @@ void TIM3_IRQHook(){
 		state = STATE_PROCESS;
 	}
 
-	// this seems like a good point to read any incoming messages
-	triggerLevel = inbox.trigLev;
-	if(triggerLevel > 4094){
-		triggerLevel = 4096;
-	}
-	if(triggerLevel < 2000){
-		triggerLevel = 2000; // TODO(a): change, only for frame sync
-	}
 }
  
 int main(void) {

@@ -56,7 +56,7 @@ const page = `
 
 	<script>
 
-var tick = 200;
+var tick = 500;
 
 // wraps document.getElementById, shows error if not found
 function elementById(id){
