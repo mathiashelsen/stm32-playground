@@ -22,7 +22,7 @@ void init_ADC(volatile uint16_t *samplesBuffer, int samples) {
 	// Configure the DMA stream for ADC -> memory
 	DMA_InitTypeDef DMAInit = {0, };
 	DMAInit.DMA_Channel            = DMA_Channel_0;                   // DMA channel 0 stream 0 is mapped to ADC1
-	DMAInit.DMA_PeripheralBaseAddr = (uint32_t) 0x4001204c;
+	DMAInit.DMA_PeripheralBaseAddr = (uint32_t) 0x4001204c;           // TODO (m): replace constant
 	DMAInit.DMA_Memory0BaseAddr	   = (uint32_t) samplesBuffer;        // Copy data from the buffer
 	DMAInit.DMA_DIR	               = DMA_DIR_PeripheralToMemory;
 	DMAInit.DMA_BufferSize         = samples*4;

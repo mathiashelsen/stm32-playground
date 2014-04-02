@@ -30,7 +30,8 @@ volatile int32_t state;
 typedef struct{
 	uint32_t magic;                   // identifies start of header, 0xFFFFFFFF
 	uint32_t samples;                 // number of samples
-	uint32_t padding[HEADER_WORDS-2]; // unused space, needed for correct total size
+	uint32_t trigLev;
+	uint32_t padding[HEADER_WORDS-3]; // unused space, needed for correct total size
 } header_t;
 
 // -- outbound communication
@@ -65,6 +66,15 @@ void TIM3_IRQHook(){
 		state = STATE_OVERFLOW;
 	} else {
 		state = STATE_PROCESS;
+	}
+
+	// this seems like a good point to read any incoming messages
+	triggerLevel = inbox.trigLev;
+	if(triggerLevel > 4094){
+		triggerLevel = 4096;
+	}
+	if(triggerLevel < 2000){
+		triggerLevel = 2000; // TODO(a): change, only for frame sync
 	}
 }
  
@@ -182,8 +192,10 @@ int main(void) {
 				GPIO_SetBits(GPIOD, GPIO_Pin_14);
 
 				outbox->magic = 0xFFFFFFFF;
-				outbox->samples = inbox.samples; // test transmission, todo change
+				outbox->samples = inbox.samples; // test transmission, TODO(a): change
+				outbox->trigLev = triggerLevel;
 				USART_asyncTX(usartBuf, headerBytes + dataBytes);
+
 			}
 			GPIO_ResetBits(GPIOD, GPIO_Pin_13);
 			state = STATE_IDLE;
