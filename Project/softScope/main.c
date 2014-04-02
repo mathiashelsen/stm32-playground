@@ -37,27 +37,25 @@ typedef struct{
 
 // -- incoming communication
 
-static volatile header_t incomingHeader;     // last header sent from software, values can be used
-static volatile header_t headerBuf;          // receive buffer for incoming usart communication, not to be used
-static uint8_t* headerArray = (uint8_t*)(&headerBuf);
-static volatile int arrayPos = 0;            // position where next received byte should go in headerArray
+static volatile header_t inbox;   // last header sent from software, values can be used
+static volatile header_t _inbuf;  // receive buffer for incoming usart communication, not to be used
+static volatile int _inpos = 0;   // position where next received byte should go in headerArray
 
 // called upon usart RX to handle incoming byte
 void myRXHandler(uint8_t data){
 		LEDOn(LED1);
- 		headerArray[arrayPos] = data;
-		arrayPos++;
-		if (arrayPos >= HEADER_BYTES){
-			arrayPos = 0;
-			incomingHeader = headerBuf; // header complete, copy to visible header
+		uint8_t* arr = (uint8_t*)(&_inbuf);
+ 		arr[_inpos] = data;
+		_inpos++;
+		if (_inpos >= HEADER_BYTES){
+			_inpos = 0;
+			inbox = _inbuf; // header complete, copy to visible header
 		}
 		LEDOff(LED1);
 }
 
 
 // Called at the end of TIM3_IRQHandler.
-// Separated from the rest of the handler so it can be
-// readily replaced if we change the sate machine.
 void TIM3_IRQHook(){
 	if( state == STATE_PROCESS ) {
 		state = STATE_OVERFLOW;
@@ -171,7 +169,7 @@ int main(void) {
 				GPIO_SetBits(GPIOD, GPIO_Pin_14);
 
 				header->magic = 0xFFFFFFFF;
-				header->samples = incomingHeader.samples; // test transmission, todo change
+				header->samples = inbox.samples; // test transmission, todo change
 				USART_asyncTX(usartBuffer, SAMPLES + HEADER_HALFWORDS);
 			}
 			GPIO_ResetBits(GPIOD, GPIO_Pin_13);
