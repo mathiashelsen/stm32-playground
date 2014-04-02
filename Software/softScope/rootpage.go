@@ -26,7 +26,8 @@ func eventHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("PUT:", m)
 		state := Header{
 			Samples: atoi(m["Samples"]), 
-			TrigLev: atoi(m["TrigLev"])}
+			TrigLev: atoi(m["TrigLev"]),
+			TimeBase: atoi(m["TimeBase"])}
 		fmt.Println("WriteToTTY:", state)
 		state.WriteTo(serial)
 	}

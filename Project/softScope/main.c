@@ -14,7 +14,7 @@
 #define STATE_PROCESS  ((int32_t)  1)
 #define STATE_OVERFLOW ((int32_t) -1)
 
-#define ADC_PERIOD  419  // 100kSamples
+volatile uint32_t ADC_PERIOD  = 419;  // 100kSamples
 #define SAMPLES	    1024// Number of samples for each acquisition/frame
 
 volatile uint16_t *samplesBuffer; // The samples buffer is divided into 4 frames
@@ -31,7 +31,8 @@ typedef struct{
 	uint32_t magic;                   // identifies start of header, 0xFFFFFFFF
 	uint32_t samples;                 // number of samples
 	uint32_t trigLev;
-	uint32_t padding[HEADER_WORDS-3]; // unused space, needed for correct total size
+	uint32_t timeBase;
+	uint32_t padding[HEADER_WORDS-4]; // unused space, needed for correct total size
 } header_t;
 
 // -- outbound communication
@@ -64,6 +65,16 @@ void myRXHandler(uint8_t data){
 			}
 			if(triggerLevel < 1000){
 				triggerLevel = 1000; // TODO(a): change, only for frame sync
+			}
+			if(inbox.timeBase < 41){
+				inbox.timeBase = 41;
+			}
+			if(inbox.timeBase > 4199){
+				inbox.timeBase = 4199;
+			}
+			if(inbox.timeBase != ADC_PERIOD){
+				init_clock(inbox.timeBase, SAMPLES);     
+				ADC_PERIOD = inbox.timeBase;
 			}
 		}
 		LEDOff(LED1);
@@ -196,6 +207,7 @@ int main(void) {
 				outbox->magic = 0xFFFFFFFF;
 				outbox->samples = inbox.samples; // test transmission, TODO(a): change
 				outbox->trigLev = triggerLevel;
+				outbox->timeBase = ADC_PERIOD;
 				USART_asyncTX(usartBuf, headerBytes + dataBytes);
 
 			}
