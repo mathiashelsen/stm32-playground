@@ -11,7 +11,10 @@
 // Initialize GPIO for the onboard LEDS
 void init_LEDs();
 
+// Turns LED on.
 void LEDOn (uint16_t led);
+
+// Turns LED off.
 void LEDOff(uint16_t led);
 
 #endif

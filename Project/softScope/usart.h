@@ -10,12 +10,11 @@ void init_USART1(uint32_t baudrate);
 // Send N bytes of data. Spins while waiting for transfer.
 void USART_TX(USART_TypeDef* USARTx, uint8_t *data, uint16_t N);
 
-// Send usartBuffer with size SAMPLES asynchronously. Sets transmitting variable.
-void USART_asyncTX(volatile uint16_t *usartBuffer, int SAMPLES);
+// Send usartBuffer with given size asynchronously. Sets transmitting variable.
+void USART_asyncTX(volatile uint8_t *usartBuffer, int bytes);
 
 // Whether USART_asyncTX is transmitting
 volatile bool transmitting;
-
 
 typedef void (*function)(void);
 

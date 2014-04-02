@@ -24,7 +24,10 @@ func eventHandler(w http.ResponseWriter, r *http.Request) {
 		m := make(map[string]interface{})
 		check(json.NewDecoder(r.Body).Decode(&m))
 		fmt.Println("PUT:", m)
-		state := Header{Samples: atoi(m["Samples"])}
+		state := Header{
+			Samples: atoi(m["Samples"]), 
+			TrigLev: atoi(m["TrigLev"]),
+			TimeBase: atoi(m["TimeBase"])}
 		fmt.Println("WriteToTTY:", state)
 		state.WriteTo(serial)
 	}
@@ -54,7 +57,7 @@ const page = `
 
 	<script>
 
-var tick = 200;
+var tick = 500;
 
 // wraps document.getElementById, shows error if not found
 function elementById(id){
@@ -132,10 +135,10 @@ function upload(){
 
 <div style="padding-top:2em;">
 	<table>
-		<tr> <td><b> Samples  </b></td> <td> <input id=Samples  type=number min=1 value=512          onchange="upload();"></td></tr>
-		<tr> <td><b> TrigLev  </b></td> <td> <input id=TrigLev  type=number min=0 value=510 max=1022 onchange="upload();"></td></tr>
-		<tr> <td><b> TimeBase </b></td> <td> <input id=TimeBase type=number min=1 value=100          onchange="upload();"></td></tr>
-		<tr> <td><b> SoftGain </b></td> <td>-<input id=SoftGain type=number min=0 value=2            onchange="upload();"></td></tr>
+		<tr> <td><b> Samples  </b></td> <td> <input id=Samples  type=number min=1 value=512           onchange="upload();"></td></tr>
+		<tr> <td><b> TrigLev  </b></td> <td> <input id=TrigLev  type=number min=0 value=2000 max=4096 onchange="upload();"></td></tr>
+		<tr> <td><b> TimeBase </b></td> <td> <input id=TimeBase type=number min=1 value=100           onchange="upload();"></td></tr>
+		<tr> <td><b> SoftGain </b></td> <td>-<input id=SoftGain type=number min=0 value=2             onchange="upload();"></td></tr>
 	</table>
 </div>
 

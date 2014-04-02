@@ -22,7 +22,7 @@ void init_clock(int ADC_PERIOD, int SAMPLES) {
 	// Enable clock to TIM3
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
 
-	TIMInit.TIM_Period        = SAMPLES-1; // Wait for 1024 samples to be aqcuired
+	TIMInit.TIM_Period        = SAMPLES-1; // Wait for number of samples to be aqcuired
 
 	// Init
 	TIM_TimeBaseInit(TIM3, &TIMInit );

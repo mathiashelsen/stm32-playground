@@ -72,7 +72,7 @@ void USART_TX(USART_TypeDef* USARTx, uint8_t *data, uint16_t N) {
 
 
 
-void USART_asyncTX(volatile uint16_t *usartBuffer, int samples) {
+void USART_asyncTX(volatile uint8_t *usartBuffer, int bytes) {
 
 	while(transmitting){
 		// wait for previous transmit
@@ -86,7 +86,7 @@ void USART_asyncTX(volatile uint16_t *usartBuffer, int samples) {
 	usartDMA.DMA_PeripheralBaseAddr = (uint32_t) &(USART1->DR);
 	usartDMA.DMA_Memory0BaseAddr    = (uint32_t) usartBuffer;
 	usartDMA.DMA_DIR                = DMA_DIR_MemoryToPeripheral;
-	usartDMA.DMA_BufferSize         = samples * sizeof(uint16_t);
+	usartDMA.DMA_BufferSize         = bytes;
 	usartDMA.DMA_PeripheralInc      = DMA_PeripheralInc_Disable;
 	usartDMA.DMA_MemoryInc          = DMA_MemoryInc_Enable;
 	usartDMA.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
