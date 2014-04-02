@@ -170,7 +170,7 @@ int main(void) {
 
 				header->magic = 0xFFFFFFFF;
 				header->samples = inbox.samples; // test transmission, todo change
-				USART_asyncTX(usartBuffer, SAMPLES + HEADER_HALFWORDS);
+				USART_asyncTX((uint8_t*)(usartBuffer), (SAMPLES + HEADER_HALFWORDS)*sizeof(uint16_t));
 			}
 			GPIO_ResetBits(GPIOD, GPIO_Pin_13);
 			state = STATE_IDLE;
