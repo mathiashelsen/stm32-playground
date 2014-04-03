@@ -40,6 +40,27 @@ void init_clock(int ADC_PERIOD, int SAMPLES) {
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
+
+	// TIM4 will run at the same speed as TIM2, but offset by half a period. This way
+	// the DAC will update when the ADC is not sampling and vice versa. Just so you know
+	// TIM2 will first update and half a clock later TIM4 will update for the first time.
+
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
+
+	memset( (void*)&TIMInit, 0, sizeof(TIM_TimeBaseInitTypeDef) );
+	TIMInit.TIM_Prescaler       = 1;
+	TIMInit.TIM_CounterMode     = TIM_CounterMode_Up;
+	TIMInit.TIM_Period	    = ADC_PERIOD >> 1;   // Wait for half a period before updating (and halting!)
+	TIMInit.TIM_ClockDivision   = TIM_CKD_DIV1;
+
+	// Init
+	TIM_TimeBaseInit(TIM4, &TIMInit );
+	TIM_SelectOnePulseMode(TIM4, TIM_OPMode_Single);	// Only one pulse (TRGO2 will restart the timer)
+	TIM_SelectSlaveMode(TIM4, TIM_SlaveMode_Trigger);	// TIM3 will be a slave to TIM2
+	TIM_SelectInputTrigger(TIM4, TIM_TS_ITR1);	    // Set the input trigger to TRGO2 = ITR1 (ITR = TRGO - 1 ;-)
+   
+	TIM_SelectOutputTrigger(TIM4, TIM_TRGOSource_Update); // TRGO on update
+
 }
 
 void enable_clock(){

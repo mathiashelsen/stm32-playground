@@ -2,6 +2,7 @@
 #define _CLOCK_H_
 
 #include "usart.h"  // for definition of "function"
+#include <string.h>
 
 // Starts the ADC clock
 void enable_clock();
