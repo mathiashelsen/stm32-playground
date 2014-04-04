@@ -75,6 +75,7 @@ void myRXHandler(uint8_t data){
 			if(inbox.timeBase != ADC_PERIOD){
 				init_clock(inbox.timeBase, SAMPLES);     
 				ADC_PERIOD = inbox.timeBase;
+				enable_clock();
 			}
 		}
 		LEDOff(LED1);
