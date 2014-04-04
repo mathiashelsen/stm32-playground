@@ -30,7 +30,7 @@ void init_clock(int ADC_PERIOD, int IR_PERIOD) {
 	TIM_TimeBaseInit(TIM2, &TIM2Init );                       // Init but DON'T enable
 	TIM_SelectOutputTrigger(TIM2, TIM_TRGOSource_Update);     // Trigger output on update
 
-	// TIM3 is 
+	// TIM3 runs at IR_PERIOD, generates interrupts so we know where the ADC is.
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);      // Enable clock to peripheral
 
 	TIM_TimeBaseInitTypeDef TIM3Init = {0, };
@@ -66,7 +66,6 @@ void init_clock(int ADC_PERIOD, int IR_PERIOD) {
 	TIM_SelectSlaveMode(TIM4, TIM_SlaveMode_Trigger);	      // TIM3 will be a slave to TIM2
 	TIM_SelectInputTrigger(TIM4, TIM_TS_ITR1);	              // Set the input trigger to TRGO2 = ITR1 (ITR = TRGO - 1 ;-)
 	TIM_SelectOutputTrigger(TIM4, TIM_TRGOSource_Update);     // TRGO on update
-	
 }
 
 function clock_TIM3_IRQHook;
