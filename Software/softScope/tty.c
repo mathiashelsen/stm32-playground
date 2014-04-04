@@ -77,8 +77,8 @@ int openTTY(char* file, int baud) {
 	cfmakeraw(&config);
 	config.c_cflag &= ~(CSIZE | PARENB);
 	config.c_cflag |= CS8;
-	config.c_cc[VMIN]  = 1; // buffer as little as possible
-	config.c_cc[VTIME] = 1; // return as quickly as possible
+	config.c_cc[VMIN]  = 128; // buffer
+	config.c_cc[VTIME] = 1;   // return as quickly as possible
 
 	// communication speed
 	if(cfsetispeed(&config, baudRate) < 0 || cfsetospeed(&config, baudRate) < 0) {
