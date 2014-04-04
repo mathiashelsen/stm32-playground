@@ -14,8 +14,8 @@
 #define STATE_PROCESS  ((int32_t)  1)
 #define STATE_OVERFLOW ((int32_t) -1)
 
-volatile uint32_t ADC_PERIOD  = 419;  // 100kSamples
-#define SAMPLES	    1024// Number of samples for each acquisition/frame
+volatile uint32_t ADC_PERIOD  = 420;  // 100kSamples
+#define SAMPLES	    1024              // Number of samples for each acquisition/frame
 
 volatile uint16_t *samplesBuffer; // The samples buffer is divided into 4 frames
 volatile uint32_t triggerFrame;   // A number between 0..3 that indicates  in which frame we need to look for a trigger
@@ -75,6 +75,7 @@ void myRXHandler(uint8_t data){
 			if(inbox.timeBase != ADC_PERIOD){
 				init_clock(inbox.timeBase, SAMPLES);     
 				ADC_PERIOD = inbox.timeBase;
+				enable_clock();
 			}
 		}
 		LEDOff(LED1);
