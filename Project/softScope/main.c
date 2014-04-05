@@ -180,6 +180,14 @@ int main(void) {
 			// Process last 4 samples manually
 			// not yet implemented
 
+			// Check if the triggerPoint is word aligned, or make it
+			// by advancing the triggerpoint in time
+			uint32_t tmp = (uint32_t) triggerPoint;
+			if( tmp & 0x3 )
+			{
+			    triggerPoint++;
+			}
+
 			// Update the triggerFrame
 			triggerFrame++;
 			if( triggerFrame == 4 ) {
@@ -193,14 +201,14 @@ int main(void) {
 				// Copy the data, using memcpy for speed reasons
 				if(triggerFrame > 0) {
 					// Data was from frame 0..2
-					memcpy((void*)(outData), (void*)triggerPoint, SAMPLES*2);
+					memcpy32((uint32_t*)(outData), (uint32_t*)triggerPoint, SAMPLES*2);
 				} else {
 					// This is the number of samples till we wrap to the first frame
 					int32_t samples = (int32_t)(samplesBuffer + 4*SAMPLES - 1 - triggerPoint);
 					// A block needs to be copied from the last frame
-					memcpy((void*)(outData), (void*)triggerPoint, samples*2);
+					memcpy32((uint32_t*)(outData), (uint32_t*)triggerPoint, samples*2);
 					// and a part from the first frame
-					memcpy((void*)(outData+samples), (void*)samplesBuffer, (SAMPLES-samples)*2);
+					memcpy32((uint32_t*)(outData+samples), (uint32_t*)samplesBuffer, (SAMPLES-samples)*2);
 				}
 
 				GPIO_SetBits(GPIOD, GPIO_Pin_14);

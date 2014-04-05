@@ -4,7 +4,9 @@
 #include <stdint.h>
 
 
-// ACHTUNG: Only works if nBytes is a multiple of 16 bytes!
-void memcpy16(uint16_t *dest, uint16_t *src, uint32_t nBytes);
+// ACHTUNG: Only works if:
+//  * nBytes is a multiple of 4
+//  * source and destination are word aligned
+void memcpy32(uint32_t *dest, uint32_t *src, uint32_t nBytes);
 
 #endif
