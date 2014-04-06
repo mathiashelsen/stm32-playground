@@ -27,6 +27,7 @@ AFLAGS	= $(MCFLAGS)
 
 SRC = main.c \
     *.c \
+    *.s \
 	stm32f4xx_it.c \
 	system_stm32f4xx.c \
 	../../Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c \
