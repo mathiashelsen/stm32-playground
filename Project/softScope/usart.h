@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "leds.h"
+
 // Init USART1 with TX on pin PB6, RX on PB7
 void init_USART1(uint32_t baudrate);
 

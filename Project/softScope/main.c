@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "adc.h"
+#include "dac.h"
 #include "clock.h"
 #include "leds.h"
 #include "usart.h"
@@ -18,6 +19,7 @@ volatile uint32_t ADC_PERIOD  = 420;  // 100kSamples
 #define SAMPLES	    1024              // Number of samples for each acquisition/frame
 
 volatile uint16_t *samplesBuffer; // The samples buffer is divided into 4 frames
+volatile uint16_t *dacBuffer;
 volatile uint32_t triggerFrame;   // A number between 0..3 that indicates  in which frame we need to look for a trigger
 volatile uint16_t triggerLevel;
 volatile int32_t state;
@@ -99,6 +101,18 @@ int main(void) {
 	samplesBuffer   = malloc(sizeof(uint16_t)*SAMPLES*4);
 	memset((void*)samplesBuffer, 0, sizeof(uint16_t)*SAMPLES*4);
 
+	// DAC
+	dacBuffer = malloc(sizeof(uint16_t)*SAMPLES);
+	uint16_t i = 0;
+	for( ; i < SAMPLES/2; i++ )
+	{
+	    dacBuffer[i] = i*4 + 0xff;
+	}
+	for( ; i < SAMPLES; i++ )
+	{
+	    dacBuffer[i] = i*4 - 0xff;
+	}
+
 	// outbound communication
 	int headerBytes = sizeof(header_t);
 	int dataBytes = SAMPLES*sizeof(outData[0]);
@@ -112,14 +126,16 @@ int main(void) {
 
 	triggerFrame = 3;
 	transmitting = 0;
-	triggerLevel = (0xFFF >> 1); // trigger halfway
+	triggerLevel = (0xFFF >> 2); // trigger halfway
 
 	init_clock(ADC_PERIOD, SAMPLES);     
 	clock_TIM3_IRQHook = TIM3_IRQHook;  // Register TIM3_IRQHook to be called at the end of TIM3_IRQHandler
 	init_ADC(samplesBuffer, SAMPLES);
+	init_DAC(dacBuffer, SAMPLES);
 	init_USART1(115200);
 	USART1_RXHandler = myRXHandler;
 	init_analogIn();
+	init_analogOut();
 	init_LEDs();
 	
 	state = STATE_IDLE;
@@ -130,7 +146,7 @@ int main(void) {
 
 	while(1) {
 		if( state == STATE_PROCESS ) {
-			GPIO_SetBits(GPIOD, GPIO_Pin_13);
+			LEDOn(LED2);
 			/*
 			* TRIGGER DETECTION
 			* The while loop has been unrolled four times, to avoid unnecessary overhead
@@ -148,22 +164,22 @@ int main(void) {
 			x3 = *sptr++;
 			x4 = *sptr; // x0 = x4 in the next iteration
 			do {
-				if(x0 > triggerLevel) {
+				if(x0 == triggerLevel) {
 					if( x1 > x0 ) {
 						triggerPoint = sptr-4;
 						N = 0;
 					}
-				} else if( (N != 0) && (x1 > triggerLevel)) {
+				} else if( (N != 0) && (x1 == triggerLevel)) {
 					if( x2 > x1 ) {
 						triggerPoint = sptr-3;
 						N = 0;
 					}
-				} else if((N != 0) && (x2 > triggerLevel) ) {
+				} else if((N != 0) && (x2 == triggerLevel) ) {
 					if( x3 > x2 ) {
 						triggerPoint = sptr-2;
 						N = 0;
 					}
-				} else if((N != 0) && (x3 > triggerLevel) ) {
+				} else if((N != 0) && (x3 == triggerLevel) ) {
 					if( x4 > x3 ) {
 						triggerPoint = sptr-1;
 						N = 0;
@@ -180,14 +196,6 @@ int main(void) {
 			// Process last 4 samples manually
 			// not yet implemented
 
-			// Check if the triggerPoint is word aligned, or make it
-			// by advancing the triggerpoint in time
-			uint32_t tmp = (uint32_t) triggerPoint;
-			if( tmp & 0x3 )
-			{
-			    triggerPoint++;
-			}
-
 			// Update the triggerFrame
 			triggerFrame++;
 			if( triggerFrame == 4 ) {
@@ -198,6 +206,14 @@ int main(void) {
 			* DATA TRANSFER (IF USART IDLE)
 			*/
 			if(triggerPoint && !transmitting) {
+			    // Check if the triggerPoint is word aligned, or make it
+			    // by advancing the triggerpoint in time
+			    uint32_t tmp = (uint32_t) triggerPoint;
+			    if( tmp & 0x3 )
+			    {
+				triggerPoint++;
+			    }
+
 				// Copy the data, using memcpy for speed reasons
 				if(triggerFrame > 0) {
 					// Data was from frame 0..2
@@ -211,7 +227,7 @@ int main(void) {
 					memcpy32((uint32_t*)(outData+samples), (uint32_t*)samplesBuffer, (SAMPLES-samples)*2);
 				}
 
-				GPIO_SetBits(GPIOD, GPIO_Pin_14);
+				LEDOn(LED3);
 
 				outbox->magic = 0xFFFFFFFF;
 				outbox->samples = inbox.samples; // test transmission, TODO(a): change
@@ -220,10 +236,10 @@ int main(void) {
 				USART_asyncTX(usartBuf, headerBytes + dataBytes);
 
 			}
-			GPIO_ResetBits(GPIOD, GPIO_Pin_13);
+			LEDOff(LED2);
 			state = STATE_IDLE;
 		} else if (state == STATE_OVERFLOW ) {
-			GPIO_SetBits(GPIOD, GPIO_Pin_12);
+			LEDOn(LED4);
 		}
 	}
 }

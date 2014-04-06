@@ -129,7 +129,7 @@ void DMA2_Stream7_IRQHandler() {
 	DMA2->HIFCR = (1 << 27 | 1 << 26);
 
 	USART_DMACmd(USART1, USART_DMAReq_Tx, DISABLE);
-	GPIO_ResetBits(GPIOD, GPIO_Pin_14);
+	LEDOff(LED3);
 	DMA_Cmd( DMA2_Stream7, DISABLE );
 	transmitting = false;
 	if (USART_postTXHook != NULL){
