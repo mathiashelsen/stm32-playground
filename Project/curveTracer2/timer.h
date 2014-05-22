@@ -10,6 +10,6 @@
 #include <stdint.h>
 #include <math.h>
 
-void init_Timer(void);
+void init_Timers(void);
 
 #endif
