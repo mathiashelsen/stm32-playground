@@ -6,9 +6,9 @@
 #include <stdint.h>
 #include <math.h>
 
-#define BUFFER_SIZE 128
+#define BUFFER_SIZE 32
 
-volatile uint16_t	DMA_BUFFER[BUFFER_SIZE];
+volatile uint16_t	DMA_BUFFER[BUFFER_SIZE] = {0x999, 0x9e9, 0xa36, 0xa7d, 0xabb, 0xaee, 0xb14, 0xb2b, 0xb33, 0xb2b, 0xb14, 0xaee, 0xabb, 0xa7d, 0xa36, 0x9e9, 0x999, 0x949, 0x8fc, 0x8b6, 0x877, 0x845, 0x81f, 0x807, 0x800, 0x807, 0x81f, 0x845, 0x877, 0x8b6, 0x8fc, 0x949};
 
 // These should be called in the following order:
 void init_DMA(void);
@@ -18,11 +18,6 @@ void init_TIM2(void);
 int main(void)
 {
     NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 ); 
-
-    for(uint16_t i = 0; i < BUFFER_SIZE; i++)
-    {
-	DMA_BUFFER[i] = (i << 2);
-    }
 
     init_TIM2();
     init_DAC();
@@ -99,7 +94,7 @@ void init_TIM2(void)
     TIM_TimeBaseInitTypeDef TIMInit = {0, }; 
     TIMInit.TIM_Prescaler   = 1;
     TIMInit.TIM_CounterMode = TIM_CounterMode_Up;
-    TIMInit.TIM_Period	    = 420; //Timer overflows at 1MHz rate
+    TIMInit.TIM_Period	    = 4; //Timer overflows at 1MHz rate
     TIMInit.TIM_ClockDivision	= TIM_CKD_DIV1;
 
     // Init but DON'T enable

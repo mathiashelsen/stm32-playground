@@ -24,17 +24,15 @@
 #define BUFFER_SIZE 1024
 volatile uint16_t VC_OUT_BUFFER[BUFFER_SIZE]; // DAC1
 volatile uint16_t VB_BUFFER; // DAC2
-volatile uint16_t VC_IN_BUFFER[BUFFER_SIZE]; // ADC1
-volatile uint16_t IE_IN_BUFFER[BUFFER_SIZE]; // ADC2
+volatile uint16_t IE_IN_BUFFER[BUFFER_SIZE]; // ADC1
 
 // These should be called in the following order:
 void init_TIM2(void); // TIM2 running at 1MHz
 void init_TIM3(void); // TIM3, running at the same frequency, but 180degrees later
 
 void init_DMA1(void); //DMA1 will be filling DAC1
-void init_DMA2(void); //DMA2 will be emptying ADC1 and ADC2
+void init_DMA2(void); //DMA2 will be emptying ADC1
 
-void init_ADC_VC(void); // Init the ADC that samples the collector-emitter voltage
 void init_ADC_IE(void); // Init the ADC that samples the emitter current
 
 void init_DAC_VC(void);
@@ -164,7 +162,7 @@ void init_DMA2(void)
     DMA_InitTypeDef DMAInit = {0, };
     DMAInit.DMA_Channel	    = DMA_Channel_0; // DMA channel 0 stream 0 is mapped to ADC1/VCE
     DMAInit.DMA_PeripheralBaseAddr  = (uint32_t) &(ADC1->DR);
-    DMAInit.DMA_Memory0BaseAddr	    = (uint32_t) VC_IN_BUFFER;
+    DMAInit.DMA_Memory0BaseAddr	    = (uint32_t) IE_IN_BUFFER;
     DMAInit.DMA_DIR	    = DMA_DIR_PeripheralToMemory;
     DMAInit.DMA_BufferSize  = BUFFER_SIZE;
     DMAInit.DMA_PeripheralInc	    = DMA_PeripheralInc_Disable;
@@ -178,24 +176,6 @@ void init_DMA2(void)
     DMAInit.DMA_PeripheralBurst	    = DMA_PeripheralBurst_Single;
     DMA_Init( DMA2_Stream0, &DMAInit );
     DMA_Cmd( DMA2_Stream0, ENABLE );
-
-    // DMA for ADC2 (stream 2, channel 1, high priority)
-    DMAInit.DMA_Channel	    = DMA_Channel_1; // DMA channel 0 stream 0 is mapped to ADC1/VCE
-    DMAInit.DMA_PeripheralBaseAddr  = (uint32_t) &(ADC2->DR);
-    DMAInit.DMA_Memory0BaseAddr	    = (uint32_t) IE_IN_BUFFER;
-    DMAInit.DMA_DIR	    = DMA_DIR_PeripheralToMemory;
-    DMAInit.DMA_BufferSize  = BUFFER_SIZE;
-    DMAInit.DMA_PeripheralInc	    = DMA_PeripheralInc_Disable;
-    DMAInit.DMA_MemoryInc   = DMA_MemoryInc_Enable;
-    DMAInit.DMA_PeripheralDataSize  = DMA_PeripheralDataSize_HalfWord;
-    DMAInit.DMA_MemoryDataSize	    = DMA_MemoryDataSize_HalfWord;
-    DMAInit.DMA_Mode	    = DMA_Mode_Normal; 
-    DMAInit.DMA_Priority    = DMA_Priority_High; // A bit lower than stream 0
-    DMAInit.DMA_FIFOMode    = DMA_FIFOMode_Disable;
-    DMAInit.DMA_MemoryBurst = DMA_MemoryBurst_Single;
-    DMAInit.DMA_PeripheralBurst	    = DMA_PeripheralBurst_Single;
-    DMA_Init( DMA2_Stream2, &DMAInit );
-    DMA_Cmd( DMA2_Stream2, ENABLE );
 
     // When all the samples have been collected, we throw an interrupt to stop this scan
     DMA_ITConfig( DMA2_Stream0, DMA_IT_TC, ENABLE); // Enable the DMA to throw an iterrupt if the buffer is full

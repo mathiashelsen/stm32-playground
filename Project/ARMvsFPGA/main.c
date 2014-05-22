@@ -21,10 +21,18 @@ int main(void)
 
     initLink();
 
-    volatile uint16_t i = 0;
+    volatile uint16_t i = 0x0000;
+    volatile uint32_t N = 0xffff;
+    volatile uint16_t j = 0x0000;
     while(1)
     {
 	*(uint16_t *)(0x60000000) = i++;
+	N = 0xffffff;
+	while(N--);
+	j = *(uint16_t *)(0x60000000);
+	N = 0xffffff;
+	while(N--);
+	
     }
 
 }
@@ -79,12 +87,12 @@ void initLink(void)
     RCC_AHB3PeriphClockCmd(RCC_AHB3Periph_FSMC, ENABLE);
     // Setup the timing
     FSMC_NORSRAMTimingInitTypeDef timingInit = {0, };
-    timingInit.FSMC_AddressSetupTime	= 2;
-    timingInit.FSMC_AddressHoldTime	= 2;
-    timingInit.FSMC_DataSetupTime	= 10;
-    timingInit.FSMC_BusTurnAroundDuration = 0;
-    timingInit.FSMC_CLKDivision		= 2;
-    timingInit.FSMC_DataLatency		= 0;
+    timingInit.FSMC_AddressSetupTime	= 0xf;
+    timingInit.FSMC_AddressHoldTime	= 0xf;
+    timingInit.FSMC_DataSetupTime	= 0xf;
+    timingInit.FSMC_BusTurnAroundDuration = 0xf;
+    timingInit.FSMC_CLKDivision		= 0xf;
+    timingInit.FSMC_DataLatency		= 0x0;
     timingInit.FSMC_AccessMode = FSMC_AccessMode_A;
     // Setup FSMC
     FSMC_NORSRAMInitTypeDef linkInit = {0, };
