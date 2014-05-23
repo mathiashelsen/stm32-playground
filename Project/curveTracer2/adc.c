@@ -19,7 +19,7 @@ void init_ADC1(void)
     memset( (void *) &adc_common_init, 0, sizeof( ADC_CommonInitTypeDef ) );
     adc_common_init.ADC_Mode = ADC_Mode_Independent;
     adc_common_init.ADC_Prescaler = ADC_Prescaler_Div4;
-    ADC_Common_Init( &adc_common_init );
+    ADC_CommonInit( &adc_common_init );
 
     // (3) Initialize the ADC-1 specific struct
     ADC_InitTypeDef adc_init;
@@ -34,8 +34,8 @@ void init_ADC1(void)
 
     // Configure interrupts
     NVIC_InitTypeDef NVIC_InitStructure;
-    NVIC_InitStructure.NVIC_IRQChannel = ADC1_IRQn;        // Configure USART1 interrupts
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;// Priority group
+    NVIC_InitStructure.NVIC_IRQChannel = ADC_IRQn;        // Configure USART1 interrupts
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;// Priority group
     NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;       // Subpriority inside the group
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;          // enable globally
     NVIC_Init(&NVIC_InitStructure);

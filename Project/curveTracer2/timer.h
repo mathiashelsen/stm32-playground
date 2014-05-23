@@ -10,6 +10,8 @@
 #include <stdint.h>
 #include <math.h>
 
+#define TIM_PERIOD  4200
+
 void init_Timers(void);
 
 #endif

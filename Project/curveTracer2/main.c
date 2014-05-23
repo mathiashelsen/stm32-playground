@@ -42,6 +42,9 @@ volatile uint32_t adcIndex;
 int main(void)
 {
     NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 ); 
+    init_DACs();
+    init_ADC1();
+    init_Timers();
     state = STATE_IDLE;
     while(1)
     {
@@ -50,12 +53,16 @@ int main(void)
 
 void TIM2_IRQHandler(void)
 {
-
+    TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
+//DAC_Align_12b_R
+//void DAC_SetChannel1Data(uint32_t DAC_Align, uint16_t Data);
+//void DAC_SetChannel2Data(uint32_t DAC_Align, uint16_t Data);
 }
 
-void ADC1_IRQHandler(void)
+void ADC_IRQHandler(void)
 {
-
+    ADC_ClearITPendingBit(ADC1, ADC_IT_EOC);
+//uint16_t ADC_GetConversionValue(ADC_TypeDef* ADCx);
 }
 
 void USART3_IRQHandler(void)
@@ -73,6 +80,10 @@ void USART3_IRQHandler(void)
 	DAC2.stop = readHalfword();
 
 	state = STATE_ACTIVE;
+	// Reset to the initial state
+
+	// Enable TIM2   
+	TIM_Cmd(TIM2, ENABLE);
     }
 }
 

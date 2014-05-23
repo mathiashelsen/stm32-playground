@@ -11,7 +11,6 @@
 #include <stdint.h>
 #include <math.h>
 
-void init_DAC1(void);
-void init_DAC2(void);
+void init_DACs(void);
 
 #endif
