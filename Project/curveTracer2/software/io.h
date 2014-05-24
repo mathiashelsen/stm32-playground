@@ -15,7 +15,8 @@
 #include <stdint.h>
 #include <errno.h>
 #include <stdarg.h>
-#include "errors.h"
+
+#define SUCCESS 0
 
 int myReadfull( int fd, void *buffer, int nBytes );
 
