@@ -19,8 +19,8 @@ void init_Timers(void)
     TIM_SelectOutputTrigger(TIM2, TIM_TRGOSource_Update);
 
     // Enable interrupt
-    TIM_ITConfig( TIM2, TIM_IT_Update, ENABLE);
     TIM_ClearITPendingBit( TIM2, TIM_IT_Update);
+    TIM_ITConfig( TIM2, TIM_IT_Update, ENABLE);
 
     NVIC_InitTypeDef NVIC_InitStructure;
     NVIC_InitStructure.NVIC_IRQChannel = TIM2_IRQn;

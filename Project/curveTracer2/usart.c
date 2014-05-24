@@ -73,3 +73,15 @@ uint16_t readHalfword(void)
     }
     return tmp;
 }
+
+void transmit(uint32_t size, uint8_t *buffer)
+{
+    uint8_t *ptr = buffer;
+    uint32_t N = size;
+    do
+    {
+	USART3->DR = *ptr++;
+	while(!USART_GetFlagStatus(USART3, USART_FLAG_TXE));
+
+    }while(--N);
+}

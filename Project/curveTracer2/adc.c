@@ -25,7 +25,8 @@ void init_ADC1(void)
     ADC_InitTypeDef adc_init;
     memset( (void *) &adc_init, 0, sizeof(ADC_InitTypeDef) );
     adc_init.ADC_Resolution	    = ADC_Resolution_12b;
-    adc_init.ADC_ContinuousConvMode = ENABLE;
+    adc_init.ADC_ContinuousConvMode = DISABLE;
+    adc_init.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_Rising;
     adc_init.ADC_ExternalTrigConv   = ADC_ExternalTrigConv_T3_TRGO;
     adc_init.ADC_DataAlign	    = ADC_DataAlign_Right;
     adc_init.ADC_NbrOfConversion    = 1;
