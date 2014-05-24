@@ -139,7 +139,7 @@ void USART3_IRQHandler(void)
     USART_ClearFlag(USART3, USART_IT_RXNE);
     USART_ITConfig(USART3, USART_IT_RXNE, DISABLE);
     // See if the first byte is the magic word
-    if (0xA3 & USART3->DR)
+    if ( 0xA3 == USART3->DR )
     {
 	DAC1.start = readHalfword();
 	DAC1.step = readHalfword();
