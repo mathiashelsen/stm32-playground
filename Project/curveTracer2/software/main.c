@@ -25,14 +25,14 @@ int main(int argc, char **argv)
 	write(fd, &(out[i]), 2);
     }
 
-    for( i = 0; i < 8; i++ )
+    for( i = 0; i < 9; i++ )
     {
-	uint16_t returnValues[128];		
-	myReadfull( fd, (void *)returnValues, 128*sizeof(uint16_t) );
+	uint8_t returnValues[129*2];		
+	myReadfull( fd, (void *)returnValues, 129*sizeof(uint16_t) );
 	int j = 0;
-	for( j = 0; j < 128; j++ )
+	for( j = 0; j < 129*2; j+=2 )
 	{
-	    printf("%d\t%d\t%d\n", i*0x0200, j*0x0020, returnValues[j]);
+	    printf("%d\t%d\t%d\n", i*0x0200, j*0x0020, (returnValues[j+1] << 8) | (returnValues[j]));
 	}
 	printf("\n\n");
     }

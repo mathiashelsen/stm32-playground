@@ -3,8 +3,8 @@
 // Configure for 115200 baud
 void init_USART(void)
 {
-    // Enable APB2 peripheral clock for USART1
-    RCC_APB2PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
+    // Enable APB1 peripheral clock for USART3
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
 
     // Enable peripheral clock for the USART pins
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
@@ -16,7 +16,7 @@ void init_USART(void)
     GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;         // Better 25(?)
     GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;            // Push-Pull
     GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;              // Pullup
-    GPIO_Init(GPIOB, &GPIO_InitStruct);
+    GPIO_Init(GPIOD, &GPIO_InitStruct);
 
     // Hand over pin control to usart.
     GPIO_PinAFConfig(GPIOD, GPIO_PinSource8, GPIO_AF_USART3);
@@ -34,7 +34,7 @@ void init_USART(void)
 
     // Configure interrupts
     NVIC_InitTypeDef NVIC_InitStructure;
-    NVIC_InitStructure.NVIC_IRQChannel = USART3_IRQn;        // Configure USART1 interrupts
+    NVIC_InitStructure.NVIC_IRQChannel = USART3_IRQn;        // Configure USART3 interrupts
     NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;// Priority group
     NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;       // Subpriority inside the group
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;          // enable globally
@@ -45,7 +45,7 @@ void init_USART(void)
     USART_ITConfig(USART3, USART_IT_RXNE, ENABLE);
 
     // Enable USART
-    USART_Cmd(USART1, ENABLE);
+    USART_Cmd(USART3, ENABLE);
 }
 
 uint32_t readWord(void)
@@ -63,6 +63,7 @@ uint32_t readWord(void)
 
 uint16_t readHalfword(void)
 {
+    volatile USART_TypeDef* USARTx = USART3;
     int i = 0;
     uint32_t tmp = 0;
     while( i < 2 )
@@ -74,9 +75,9 @@ uint16_t readHalfword(void)
     return tmp;
 }
 
-void transmit(uint32_t size, uint8_t *buffer)
+void transmit(uint32_t size, volatile uint8_t *buffer)
 {
-    uint8_t *ptr = buffer;
+    volatile uint8_t *ptr = buffer;
     uint32_t N = size;
     do
     {

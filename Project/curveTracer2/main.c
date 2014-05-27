@@ -48,6 +48,7 @@ int main(void)
     init_DACs();
     init_ADC1();
     init_Timers();
+    init_USART();
     state = STATE_IDLE;
 
     DAC1.start	= 0x0000;
@@ -59,6 +60,9 @@ int main(void)
     DAC2.step	= 0x0200;
     DAC2.stop	= 0x1000;
     DAC2Value	= 0x0000;
+
+    char test[] = "hello";
+    transmit( strlen(test), test);
 
     ADCBuffer	= malloc(128 * sizeof(uint16_t));
 
@@ -105,6 +109,9 @@ void TIM2_IRQHandler(void)
 void ADC_IRQHandler(void)
 {
     ADC_ClearITPendingBit(ADC1, ADC_IT_EOC);
+    if( state != STATE_ACTIVE )
+	return;
+
     ADCBuffer[ADCIndex] = ADC_GetConversionValue(ADC1);
     // Check if we are at the end of the V_CE sweep
     if( DAC1Value == DAC1.stop )
@@ -154,6 +161,7 @@ void USART3_IRQHandler(void)
 	free( (void *) ADCBuffer);
 	uint32_t nSamples = 1 + (uint32_t) ((DAC1.stop - DAC1.start)/DAC1.step);
 	ADCBuffer	= malloc(nSamples * sizeof(uint16_t));
+	ADCIndex	= 0;
 
 	// Enable TIM2   
 	TIM_Cmd(TIM2, ENABLE);

@@ -12,7 +12,7 @@
 #include <math.h>
 
 void init_USART(void);
-void transmit(uint32_t size, uint8_t *buffer);
+void transmit(uint32_t size, volatile uint8_t *buffer);
 uint32_t readWord(void);
 uint16_t readHalfword(void);
 
