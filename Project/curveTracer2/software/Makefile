@@ -57,7 +57,7 @@
 ##==========================================================================
 
 # The pre-processor and compiler options.
-MY_CFLAGS = -Wall --std=c99
+MY_CFLAGS = -Wall
 
 # The linker options.
 MY_LIBS   = -pthread -lm -I../Libraries

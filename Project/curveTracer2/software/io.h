@@ -15,7 +15,7 @@
 #include <stdint.h>
 #include <errno.h>
 #include <stdarg.h>
-
+#define _POSIX_SOURCE 1
 #define SUCCESS 0
 
 int myReadfull( int fd, void *buffer, int nBytes );

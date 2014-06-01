@@ -31,6 +31,8 @@ volatile uint16_t DAC2Value;
 
 volatile uint16_t *ADCBuffer;
 volatile uint32_t ADCIndex;
+volatile uint32_t EOL;
+volatile uint32_t EOS;
 
 /*
  * This is the deal, once started:
@@ -42,6 +44,8 @@ volatile uint32_t ADCIndex;
  * and transmission will start of the trace, when this is not the last trace
  * another trace will be recorded.
  */
+
+
 int main(void)
 {
     NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 ); 
@@ -50,6 +54,8 @@ int main(void)
     init_Timers();
     init_USART();
     state = STATE_IDLE;
+    EOL = 0;
+    EOS = 0;
 
     DAC1.start	= 0x0000;
     DAC1.step	= 0x0020;
@@ -60,9 +66,6 @@ int main(void)
     DAC2.step	= 0x0200;
     DAC2.stop	= 0x1000;
     DAC2Value	= 0x0000;
-
-    char test[] = "hello";
-    transmit( strlen(test), test);
 
     ADCBuffer	= malloc(128 * sizeof(uint16_t));
 
@@ -94,11 +97,13 @@ void TIM2_IRQHandler(void)
     
 	if( DAC1Value > DAC1.stop )
 	{
+	    EOL = 1;
 	    DAC1Value = DAC1.start;
 	    DAC2Value += DAC2.step;
 	    if(DAC2Value > DAC2.stop)
 	    {
 		DAC2Value = DAC2.start;
+		EOS = 1;
 	    }
 	    DAC_SetChannel2Data(DAC_Align_12b_R, DAC2Value);
 	}
@@ -114,18 +119,21 @@ void ADC_IRQHandler(void)
 
     ADCBuffer[ADCIndex] = ADC_GetConversionValue(ADC1);
     // Check if we are at the end of the V_CE sweep
-    if( DAC1Value == DAC1.stop )
+    if( EOL )
     {
 	// Disable the timer temporary
 	TIM_Cmd(TIM2, DISABLE);
 	// Transmit the data
-	transmit( sizeof(uint16_t)*(ADCIndex+1), (uint8_t*) ADCBuffer);	
+	uint16_t nBytes = sizeof(uint16_t)*(ADCIndex);
+	transmit( 2, &nBytes);
+	transmit( sizeof(uint16_t)*(ADCIndex), (uint8_t*) ADCBuffer);	
 	// Reset the index
 	ADCIndex = 0;
 	// Check if we are at the end of the V_BE sweep
 	// if so, don't restart the timer
-	if( DAC2Value != DAC2.stop )
+	if( !EOS )
 	{
+	    EOL = 0;
 	    TIM_Cmd(TIM2, ENABLE);
 	}
 	else
@@ -133,6 +141,8 @@ void ADC_IRQHandler(void)
 	    DAC_SetChannel1Data(DAC_Align_12b_R, DAC1.start);
 	    DAC_SetChannel2Data(DAC_Align_12b_R, DAC2.start);
 	    state = STATE_IDLE;
+	    nBytes = 0;
+	    transmit( 2, &nBytes);
 	}
     }
     else
@@ -159,9 +169,11 @@ void USART3_IRQHandler(void)
 	state = STATE_START;
 	// Reset to the initial state
 	free( (void *) ADCBuffer);
-	uint32_t nSamples = 1 + (uint32_t) ((DAC1.stop - DAC1.start)/DAC1.step);
+    	volatile uint32_t nSamples = 1 + (uint32_t) ((DAC1.stop - DAC1.start)/DAC1.step);
 	ADCBuffer	= malloc(nSamples * sizeof(uint16_t));
 	ADCIndex	= 0;
+	EOL = 0;
+	EOS = 0;
 
 	// Enable TIM2   
 	TIM_Cmd(TIM2, ENABLE);

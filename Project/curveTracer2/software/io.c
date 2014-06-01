@@ -30,7 +30,7 @@ int myRead( int fd, void *buffer, int nbytes )
 
 int initSerial( int *fd, int baudrate, char *devname )
 {
-    *fd = open( devname, O_RDWR | O_NOCTTY | O_SYNC );
+    *fd = open( devname, O_RDWR | O_NOCTTY);
     if (*fd < 0)
     {
         fprintf(stderr, "! ERROR: Could not open serial port!\n");
@@ -61,6 +61,7 @@ static int set_interface_attribs (int fd, int speed, int parity)
         // disable IGNBRK for mismatched speed tests; otherwise receive break
         // as \000 chars
         tty.c_iflag &= ~IGNBRK;         // ignore break signal
+	tty.c_iflag |= CLOCAL;
         tty.c_lflag = 0;                // no signaling chars, no echo,
                                         // no canonical processing
         tty.c_oflag = 0;                // no remapping, no delays
