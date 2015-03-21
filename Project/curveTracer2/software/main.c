@@ -7,15 +7,15 @@
 int main(int argc, char **argv)
 {
     volatile int fd;
-    initSerial( &fd, 115200, "/dev/ttyUSB0" );
+    initSerial( &fd, 9600, "/dev/ttyUSB0" );
     uint16_t out[6];
     out[0]	= 0x0000;
-    out[1]	= 0x0020;
-    out[2]	= 0x0800+19;
+    out[1]	= 0x0005;
+    out[2]	= 0x1000-0x0010;
 
     out[3]	= 0x0000;
     out[4]	= 0x0080;
-    out[5]	= 0x0800+79;
+    out[5]	= 0x1000-0x0010;
 
     uint8_t magic = 0xA3;
     write(fd, &magic, 1);

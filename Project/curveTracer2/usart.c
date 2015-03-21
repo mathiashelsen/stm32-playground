@@ -7,23 +7,23 @@ void init_USART(void)
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
 
     // Enable peripheral clock for the USART pins
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
 
     // Sets up TX and RX pins
     GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9;
+    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_11 | GPIO_Pin_10;
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;              // Alternate Function
     GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;         // Better 25(?)
     GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;            // Push-Pull
     GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;              // Pullup
-    GPIO_Init(GPIOD, &GPIO_InitStruct);
+    GPIO_Init(GPIOB, &GPIO_InitStruct);
 
     // Hand over pin control to usart.
-    GPIO_PinAFConfig(GPIOD, GPIO_PinSource8, GPIO_AF_USART3);
-    GPIO_PinAFConfig(GPIOD, GPIO_PinSource9, GPIO_AF_USART3);
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource10, GPIO_AF_USART3);
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource11, GPIO_AF_USART3);
 
     USART_InitTypeDef usartInit = {0, };
-    usartInit.USART_BaudRate = 115200;
+    usartInit.USART_BaudRate = 9600;
     usartInit.USART_WordLength = USART_WordLength_8b;
     usartInit.USART_StopBits = USART_StopBits_1;
     usartInit.USART_Parity = USART_Parity_No;
